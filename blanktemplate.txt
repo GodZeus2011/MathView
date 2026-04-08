@@ -1,0 +1,66 @@
+class BlankVisual extends Visual {
+    constructor() {
+        super({
+            id: "blank-visual",
+            name: "Blank-visual",
+            category: "Beginner",
+            description: "Starter template for building a new visualization."
+        });
+
+        this.defaultParams = {
+            exampleValue: 50,
+            showSomething: true,
+            themeColor: "#3366ff",
+            mode: "A"
+        };
+        this.params = { ...this.defaultParams };
+        this.paramDefs = [
+            {
+                type: "section",
+                label: "Example Controls"
+            },
+            {
+                type: "slider",
+                key: "exampleValue",
+                label: "Example Value",
+                min: 0,
+                max: 100,
+                step: 1,
+                help: "Example numeric parameter."
+            },
+            {
+                type: "toggle",
+                key: "showSomething",
+                label: "Show Something"
+            },
+            {
+                type: "color",
+                key: "themeColor",
+                label: "Theme Color"
+            },
+            {
+                type: "select",
+                key: "mode",
+                label: "Mode",
+                options: ["A", "B", "C"]
+            },
+            {
+                type: "button",
+                label: "Reset",
+                action: "resetParams"
+            }
+        ];
+    }
+
+    init() {}
+    update() {}
+    draw() {}
+    mousePressed() {}
+    mouseDragged() {}
+    mouseReleased() {}
+    mouseWheel(event) {}
+    keyPressed() {}
+    keyReleased() {}
+    onParamChange(key, value) {}
+}
+registerVisual(new BlankVisual());

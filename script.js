@@ -2,6 +2,7 @@ const visuals = [];
 let currentVisual = null;
 const collapsedCategories = {};
 
+//BASE VISUAL
 class Visual {
     constructor({ id, name, category, description = "" }) {
         this.id = id;
@@ -29,18 +30,20 @@ class Visual {
 
     onParamChange(key, value) {}
 
-    setParam(key, value) {
+    setParam(key, value, {header = false, sidebar = false, controls = false} = {}) {
         this.params[key] = value;
         this.onParamChange(key, value);
+
+        if (header || sidebar || controls) updateUI({header,sidebar,controls});
     }
 
     resetParams() {
-        this.params = {};
+        this.params = { ...this.defaultParams };
         Object.keys(this.defaultParams).forEach(key => {
         this.setParam(key, this.defaultParams[key]);
     });
 
-        buildControls();
+        updateUI({controls: true});
     }
 
     triggerAction(action) {
@@ -50,6 +53,7 @@ class Visual {
     }
 }
 
+//Register ids
 function registerVisual(visualInstance) {
     if (visuals.some(v => v.id === visualInstance.id)) {
         console.error(`Duplicate visual id: ${visualInstance.id}`);
@@ -58,6 +62,7 @@ function registerVisual(visualInstance) {
     visuals.push(visualInstance);
 }
 
+//Header
 function updateVisualHeader() {
     const titleEl = document.getElementById("visual-title");
     const descEl = document.getElementById("visual-description");
@@ -72,6 +77,7 @@ function updateVisualHeader() {
     descEl.textContent = currentVisual.description || "";
 }
 
+//Sidebar
 function buildVisualSidebar() {
     const container = document.getElementById("visual-list");
     container.innerHTML = "";
@@ -102,7 +108,7 @@ function buildVisualSidebar() {
         
         header.addEventListener("click", () => {
             collapsedCategories[category] = !collapsedCategories[category];
-            buildVisualSidebar();
+            updateUI({sidebar: true});
         });
 
         grouped[category].forEach(visual => {
@@ -127,6 +133,7 @@ function buildVisualSidebar() {
     });
 }
 
+//Controls
 function buildControls() {
     const container = document.getElementById("controls-container");
     container.innerHTML = "";
@@ -273,6 +280,18 @@ function buildControls() {
     });
 }
 
+//UI refresh
+function updateUI({header = false, sidebar = false, controls = false} = {}) {
+    if (header) updateVisualHeader();
+    if (sidebar) buildVisualSidebar();
+    if (controls) buildControls();
+}
+
+function updateALL() {
+    updateUI({ header: true, sidebar: true, controls: true });
+}
+
+//Switching
 function switchVisual(id) {
     const found = visuals.find(v => v.id === id);
     if (!found) return;
@@ -280,11 +299,10 @@ function switchVisual(id) {
     currentVisual = found;
     currentVisual.init();
 
-    updateVisualHeader();
-    buildVisualSidebar();
-    buildControls();
+    updateALL();
 }
 
+//P5JS
 function setup() {
     const canvas = createCanvas(800, 600);
     canvas.parent("canvas-container");
@@ -293,9 +311,7 @@ function setup() {
         switchVisual(visuals[0].id);
     } 
     else {
-        updateVisualHeader();
-        buildVisualSidebar();
-        buildControls();
+        updateALL();
     }
 }
 
@@ -308,6 +324,7 @@ function draw() {
     currentVisual.draw();
 }
 
+//Event Forwarding
 function mousePressed() {
     if (currentVisual) currentVisual.mousePressed();
 }
@@ -322,7 +339,7 @@ function mouseReleased() {
 
 function mouseWheel(event) {
     if (currentVisual) {
-        currentVisual.mouseWheel(event);
+        return currentVisual.mouseWheel(event);
     }
 }
 
