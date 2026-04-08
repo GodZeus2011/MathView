@@ -1,11 +1,14 @@
 const visuals = [];
 let currentVisual = null;
+const collapsedCategories = {};
 
 class Visual {
-    constructor({ id, name, category}) {
+    constructor({ id, name, category, description = "" }) {
         this.id = id;
         this.name = name;
         this.category = category;
+        this.description = description;
+        this.defaultParams = {};
         this.params = {};
         this.paramDefs = [];
     }
@@ -16,14 +19,57 @@ class Visual {
     mousePressed() {}
     mouseDragged() {}
     mouseReleased() {}
+    mouseWheel(event) {}
+    keyPressed() {}
+    keyReleased() {}
 
     getParamDefs() {
         return this.paramDefs;
     }
+
+    onParamChange(key, value) {}
+
+    setParam(key, value) {
+        this.params[key] = value;
+        this.onParamChange(key, value);
+    }
+
+    resetParams() {
+        this.params = {};
+        Object.keys(this.defaultParams).forEach(key => {
+        this.setParam(key, this.defaultParams[key]);
+    });
+
+        buildControls();
+    }
+
+    triggerAction(action) {
+        if (typeof this[action] === "function") {
+            this[action]();
+        }
+    }
 }
 
 function registerVisual(visualInstance) {
+    if (visuals.some(v => v.id === visualInstance.id)) {
+        console.error(`Duplicate visual id: ${visualInstance.id}`);
+        return;
+    }
     visuals.push(visualInstance);
+}
+
+function updateVisualHeader() {
+    const titleEl = document.getElementById("visual-title");
+    const descEl = document.getElementById("visual-description");
+
+    if (!currentVisual) {
+        titleEl.textContent = "No Visual Selected";
+        descEl.textContent = "";
+        return;
+    }
+
+    titleEl.textContent = currentVisual.name;
+    descEl.textContent = currentVisual.description || "";
 }
 
 function buildVisualSidebar() {
@@ -43,11 +89,22 @@ function buildVisualSidebar() {
         const groupDiv = document.createElement("div");
         groupDiv.className = "category-group";
 
-        const title = document.createElement("div");
-        title.className = "category-title";
-        title.textContent = category;
-        groupDiv.appendChild(title);
+        const header = document.createElement("button");
+        header.className = "category-header";
+        header.textContent = category;
         
+        const content = document.createElement("div");
+        content.className = "category-content";
+
+        if (collapsedCategories[category]) {
+            content.classList.add("collapsed");
+        }
+        
+        header.addEventListener("click", () => {
+            collapsedCategories[category] = !collapsedCategories[category];
+            buildVisualSidebar();
+        });
+
         grouped[category].forEach(visual => {
             const btn = document.createElement("button");
             btn.className = "visual-button";
@@ -61,9 +118,11 @@ function buildVisualSidebar() {
                 switchVisual(visual.id);
             });
 
-            groupDiv.appendChild(btn);
+            content.appendChild(btn);
         });
 
+        groupDiv.appendChild(header);
+        groupDiv.appendChild(content);
         container.appendChild(groupDiv);
     });
 }
@@ -77,12 +136,138 @@ function buildControls() {
     const defs = currentVisual.getParamDefs();
 
     defs.forEach(def => {
+        if(def.type === "section") {
+            const section = document.createElement("div");
+            section.className = "control-section";
+            section.textContent = def.label;
+            container.appendChild(section);
+            return;
+        }
+
         const group = document.createElement("div");
         group.className = "control-group";
 
-        const label = document.createElement("label");
-        label.textContent = def.label;
-        group.appendChild(label);
+        if (def.type !== "button") {
+            const label = document.createElement("label");
+            label.textContent = def.label;
+            group.appendChild(label);
+        }
+
+        if (def.type === "slider") {
+            const row = document.createElement("div");
+            row.className = "control-row";
+
+            const input = document.createElement("input");
+            input.type = "range";
+            input.min = def.min;
+            input.max = def.max;
+            input.step = def.step ?? 1;
+            input.value = currentVisual.params[def.key];
+
+            const value = document.createElement("span");
+            value.className = "control-value";
+            value.textContent = currentVisual.params[def.key];
+
+            input.addEventListener("input", () => {
+                const val = parseFloat(input.value);
+                currentVisual.setParam(def.key, val);
+                value.textContent = val;
+            });
+
+            row.appendChild(input);
+            row.appendChild(value);
+            group.appendChild(row);
+        }
+
+        else if (def.type === "number") {
+            const input = document.createElement("input");
+            input.type = "number";
+            if (def.min !== undefined) input.min = def.min;
+            if (def.max !== undefined) input.max = def.max;
+            if (def.step !== undefined) input.step = def.step;
+            input.value = currentVisual.params[def.key];
+
+            input.addEventListener("input", () => {
+                const val = parseFloat(input.value);
+                if (!isNaN(val)) {
+                    currentVisual.setParam(def.key, val);
+                }
+            });
+
+            group.appendChild(input);
+        }
+
+        else if (def.type === "toggle") {
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.checked = !!currentVisual.params[def.key];
+
+            input.addEventListener("change", () => {
+                currentVisual.setParam(def.key, input.checked);
+            });
+
+            group.appendChild(input);
+        }
+
+        else if (def.type === "color") {
+            const input = document.createElement("input");
+            input.type = "color";
+            input.value = currentVisual.params[def.key];
+
+            input.addEventListener("input", () => {
+                currentVisual.setParam(def.key, input.value);
+            });
+
+            group.appendChild(input);
+        }
+
+        else if (def.type === "select") {
+            const select = document.createElement("select");
+
+            def.options.forEach(option => {
+                const opt = document.createElement("option");
+
+                if (typeof option === "object") {
+                    opt.value = option.value;
+                    opt.textContent = option.label;
+                }
+                else {
+                    opt.value = option;
+                    opt.textContent = option;
+                }
+
+                select.appendChild(opt);
+            });
+
+            select.value = currentVisual.params[def.key];
+
+            select.addEventListener("change", () => {
+                currentVisual.setParam(def.key, select.value);
+            });
+
+            group.appendChild(select);
+        }
+
+        else if (def.type === "button") {
+            const button = document.createElement("button");
+            button.className = "control-button";
+            button.textContent = def.label;
+
+            button.addEventListener("click", () => {
+                if (def.action) {
+                    currentVisual.triggerAction(def.action);
+                }
+            });
+
+            group.appendChild(button);
+        }
+
+        if (def.help) {
+            const help = document.createElement("div");
+            help.className = "help-text";
+            help.textContent = def.help;
+            group.appendChild(help);
+        }
 
         container.appendChild(group);
     });
@@ -95,6 +280,7 @@ function switchVisual(id) {
     currentVisual = found;
     currentVisual.init();
 
+    updateVisualHeader();
     buildVisualSidebar();
     buildControls();
 }
@@ -107,8 +293,9 @@ function setup() {
         switchVisual(visuals[0].id);
     } 
     else {
-        buildControls();
+        updateVisualHeader();
         buildVisualSidebar();
+        buildControls();
     }
 }
 
@@ -131,4 +318,18 @@ function mouseDragged() {
 
 function mouseReleased() {
     if (currentVisual) currentVisual.mouseReleased();
+}
+
+function mouseWheel(event) {
+    if (currentVisual) {
+        currentVisual.mouseWheel(event);
+    }
+}
+
+function keyPressed() {
+    if (currentVisual) currentVisual.keyPressed();
+}
+
+function keyReleased() {
+    if (currentVisual) currentVisual.keyReleased();
 }

@@ -20,25 +20,43 @@ body {
 
 #left-sidebar,
 #right-sidebar {
-    width: 260px;
+    width: 280px;
     background: #ffffff;
-    border-right: 1px solid #ddd;
     padding: 16px;
     overflow-y: auto;
 }
 
+#left-sidebar {
+    border-right: 1px solid #ddd;
+}
+
 #right-sidebar {
-    border-right: none;
     border-left: 1px solid #ddd;
 }
 
 #center-panel {
     flex: 1;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
     background: #eaeaea;
     padding: 16px;
+}
+
+#canvas-header {
+    width: 800px;
+    margin-bottom: 12px;
+}
+
+#visual-title {
+    margin: 0 0 6px 0;
+    font-size: 24px;
+}
+
+#visual-description {
+  margin: 0;
+  color: #555;
+  font-size: 14px;
 }
 
 #canvas-container {
@@ -54,13 +72,31 @@ h2 {
 }
 
 .category-group {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
-.category-title {
+.category-header {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    background: #f0f0f0;
     font-weight: bold;
+    cursor: pointer;
+    text-align: left;
+    border-radius: 4px;
     margin-bottom: 8px;
-    font-size: 16px;
+}
+
+.category-header:hover {
+  background: #e7e7e7;
+}
+
+.category-content {
+  padding-left: 4px;
+}
+
+.category-content.collapsed {
+  display: none;
 }
 
 .visual-button {
@@ -85,11 +121,62 @@ h2 {
 }
 
 .control-group {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .control-group label {
     display: block;
     margin-bottom: 6px;
     font-size: 14px;
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-value {
+    min-width: 48px;
+    font-size: 13px;
+    color: #444;
+}
+
+input[type="range"] {
+    flex: 1;
+}
+
+input[type="number"],
+select,
+input[type="color"] {
+  width: 100%;
+  padding: 6px;
+  font-size: 14px;
+}
+
+button.control-button {
+    padding: 8px 12px;
+    border: 1px solid #bbb;
+    background: #f4f4f4;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+button.control-button:hover {
+    background: #e8e8e8;
+}
+
+.control-section {
+    margin: 20px 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #ddd;
+    font-weight: bold;
+    font-size: 15px;
+    color: #333;
+}
+
+.help-text {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #666;
 }
