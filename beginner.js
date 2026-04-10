@@ -177,7 +177,7 @@ class QuadraticFunctionGraph extends Visual {
             id: "quadratic-function-graph",
             name: "Quadratic Function Graph",
             category: "Beginner",
-            description: "1 Unit = 20 Pixels. Explore Standard, Vertex, and Factored forms."
+            description: "Explore Standard, Vertex, and Factored forms of quadratics."
         });
 
         this.defaultParams = {
@@ -364,7 +364,7 @@ class TrigFunctionGraph extends Visual {
             id: "trig-function-graph",
             name: "Trigonometric Graph",
             category: "Beginner",
-            description: "High-precision trig grapher with expanded slider ranges to cover the full canvas."
+            description: "Simple Trig Grapher"
         });
 
         this.defaultParams = {
