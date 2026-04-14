@@ -51,6 +51,68 @@ class Visual {
             this[action]();
         }
     }
+
+    setupCanvas() {
+        translate(width / 2, height / 2);
+        scale(1, -1);
+    }
+
+    updatePalette(hex) {
+    if (!hex) return;
+    let base = color(hex);
+    
+    push();
+    colorMode(HSB, 360, 100, 100);
+    let h = hue(base);
+    let s = saturation(base);
+    let b = brightness(base);
+
+    this.palette = {
+        main: base,
+        accent: color((h + 180) % 360, s, b), 
+        fill: color(h, s * 0.3, b, 0.5),      
+        list: []                            
+    };
+
+    for (let i = 0; i < 9; i++) {
+        let nh = (h + random(-20, 20) + 360) % 360; 
+        let ns = constrain(s + random(-30, 30), 20, 100);
+        let nb = constrain(b + random(-40, 40), 20, 100);
+        this.palette.list.push(color(nh, ns, nb));
+    }
+    pop();
+}
+
+    drawPolarGrid(ppu = 20, radialStep = 2, angleStep = 30, color = "#e0e0e0") {
+        stroke(color);
+        strokeWeight(0.5);
+        noFill();
+
+        for (let r = radialStep; r < 25; r += radialStep) {
+            circle(0, 0, r * 2 * ppu);
+        }
+
+        for (let a = 0; a < 360; a += angleStep) {
+            let rad = radians(a);
+            let lx = cos(rad) * 1000;
+            let ly = sin(rad) * 1000;
+            line(0, 0, lx, ly);
+        }
+    }
+
+    drawStandardGrid(ppu = 20, color = "#e0e0e0") {
+        stroke(color);
+        strokeWeight(0.5);
+        for (let x = -width/2; x <= width/2; x += ppu) line(x, -height/2, x, height/2);
+        for (let y = -height/2; y <= height/2; y += ppu) line(-width/2, y, width/2, y);
+    }
+
+    drawStandardAxes(color = "#333333") {
+        stroke(color);
+        strokeWeight(1.5);
+        line(-width/2, 0, width/2, 0);
+        line(0, -height/2, 0, height/2);
+    }
 }
 
 //Register ids
@@ -344,7 +406,14 @@ function mouseWheel(event) {
 }
 
 function keyPressed() {
-    if (currentVisual) currentVisual.keyPressed();
+    if (!currentVisual) return;
+
+    if (key === 'r' || key === 'R') {
+        currentVisual.resetParams();
+        return; 
+    }
+
+    currentVisual.keyPressed();
 }
 
 function keyReleased() {
