@@ -750,12 +750,12 @@ class LissajousVisual extends Visual {
 
         this.paramDefs = [
             { type: "section", label: "Frequencies (a, b)" },
-            { type: "slider", key: "a", label: "X Frequency (a)", min: 1, max: 10, step: 0.1 },
-            { type: "slider", key: "b", label: "Y Frequency (b)", min: 1, max: 10, step: 0.1 },
+            { type: "slider", key: "a", label: "X Frequency (a)", min: 1, max: 10, step: 0.5 },
+            { type: "slider", key: "b", label: "Y Frequency (b)", min: 1, max: 10, step: 0.5 },
 
             { type: "section", label: "Geometry & Phase" },
             { type: "slider", key: "A", label: "X Amplitude (A)", min: 1, max: 15, step: 0.5 },
-            { type: "slider", key: "B", label: "Y Amplitude (B)", min: 1, max: 11, step: 0.5 },
+            { type: "slider", key: "B", label: "Y Amplitude (B)", min: 1, max: 10, step: 0.5 },
             { type: "slider", key: "delta", label: "Phase Shift (δ)", min: 0, max: 360, step: 1 },
 
             { type: "section", label: "Animation [Space to Animate]" },
@@ -799,7 +799,7 @@ class LissajousVisual extends Visual {
         strokeWeight(2);
         
         beginShape();
-        for (let t = 0; t <= TWO_PI * 6; t += 0.01) {
+        for (let t = 0; t <= TWO_PI * 10; t += 0.01) {
             let x = p.A * sin(p.a * t + radDelta);
             let y = p.B * sin(p.b * t);
             vertex(x * ppu, y * ppu);
@@ -924,104 +924,6 @@ class RoseVisual extends Visual {
     }
 }
 registerVisual(new RoseVisual());
-
-class CirclePacking extends Visual {
-    constructor() {
-        super({
-            id: "circle-packing",
-            name: "Circle Packing",
-            category: "Beginner",
-            description:"A algorithm that packs circles in a given boundary."
-        });
-
-        this.circles = [];
-        this.palette = [];
-        
-        this.defaultParams = {
-            maxCircles: 750,
-            growthSpeed: 1.5,
-            spawnRate: 10,
-            animate: true,
-            baseColor: "#e91e63"
-        }
-
-        this.params = {...this.defaultParams}
-
-        this.paramDefs= [
-            {type: "section", label: "Simulation [Space to Play/Pause]"},
-            {type: "toggle", key: "animate", label: "Run Simulation"},
-            {type: "slider", key: "maxCircles", label: "Max Circles", min: 100, max: 2000, step: 50},
-            {type: "slider", key: "growthSpeed", label: "Growth Speed", min: 0.2, max: 5, step: 0.1},
-            {type: "slider", key: "spawnRate", label: "Spawn Attempts", min: 1, max: 30, step: 1},
-
-            {type: "section", label: "Color Theme"},
-            {type: "color", key: "baseColor", label: "Theme Color"}
-        ];
-    }
-
-    init() {
-        this.circles = [];
-        this.updatePalette(this.params.baseColor); 
-    }
-
-    onParamChange(key, value) {
-        if (key === "baseColor" || key === "maxCircles") this.init();
-    }
-
-    update() {
-        if (!this.params.animate) return;
-        if (this.circles.length < this.params.maxCircles) {
-            for (let i = 0; i < this.params.spawnRate; i++) this.createNewCircle();
-        }
-        this.circles.forEach(c => {
-            if (c.growing) {
-                if (c.x + c.r > width/2 || c.x - c.r < -width/2 || c.y + c.r > height/2 || c.y - c.r < -height/2) {
-                    c.growing = false;
-                } else {
-                    for (let other of this.circles) {
-                        if (c !== other) {
-                            let d = dist(c.x, c.y, other.x, other.y);
-                            if (d < c.r + other.r + 2) { c.growing = false; break; }
-                        }
-                    }
-                }
-                if (c.growing) c.r += this.params.growthSpeed;
-            }
-        });
-    }
-
-    createNewCircle() {
-        let rx = random(-width/2, width/2);
-        let ry = random(-height/2, height/2);
-        let valid = true;
-        for (let c of this.circles) {
-            if (dist(rx, ry, c.x, c.y) < c.r + 2) { valid = false; break; }
-        }
-        if (valid) {
-            this.circles.push({
-                x: rx, y: ry, r: 1, growing: true,
-                color: random(this.palette.list) 
-            });
-        }
-    }
-
-    draw() {
-        push();
-        this.setupCanvas();
-        this.circles.forEach(c => {
-            fill(c.color);
-            stroke(20, 100);
-            strokeWeight(1.5);
-            circle(c.x, c.y, c.r * 2);
-        });
-        pop();
-    }
-
-    keyPressed() {
-        if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true });
-    }
-}
-registerVisual(new CirclePacking());
 
 class RegularPolygonVisual extends Visual {
     constructor() {
@@ -1534,3 +1436,403 @@ class NormalDistributionVisual extends Visual {
     }
 }
 registerVisual(new NormalDistributionVisual());
+
+class MonteCarloPi extends Visual {
+    constructor() {
+        super({
+            id: "monte-carlo-pi",
+            name: "Monte Carlo Pi Estimation",
+            category: "Beginner",
+            description: "Estimate the value of Pi by scattering random points."
+        });
+
+        this.points = [];
+        this.insideCount = 0;
+        this.totalCount = 0;
+
+        this.defaultParams = {
+            ppu: 20,
+            radius: 10,
+            batchSize: 10,
+            animate: false,
+            baseColor: "#3f51b5",
+            showGrid: true,
+            showLabels: true
+        }
+
+        this.params = { ...this.defaultParams };
+
+        this.paramDefs = [
+            { type: "section", label: "Simulation [Space to Play/Pause]" },
+            { type: "toggle", key: "animate", label: "Run Simulation" },
+            { type: "slider", key: "batchSize", label: "Points per Frame", min: 1, max: 50, step: 1 },
+            
+            { type: "section", label: "Geometry (Units)" },
+            { type: "slider", key: "radius", label: "Circle Radius (r)", min: 5, max: 10, step: 0.5 },
+
+            { type: "section", label: "Appearance" },
+            { type: "color", key: "baseColor", label: "Theme Color" },
+            { type: "toggle", key: "showGrid", label: "Show Grid" }
+        ];
+    }
+
+    init() {
+        this.updatePalette(this.params.baseColor);
+        this.resetSimulation();
+    }
+
+    resetSimulation() {
+        this.points = [];
+        this.insideCount = 0;
+        this.totalCount = 0;
+    }
+
+    onParamChange(key, value) {
+        if (key === "baseColor") this.updatePalette(value);
+        if (key === "radius") this.resetSimulation();
+    }
+
+    update() {
+        if (!this.params.animate) return;
+
+        for (let i = 0; i < this.params.batchSize; i++) {
+            this.addRandomPoint();
+        }
+
+        if (this.points.length > 5000) {
+            this.points.shift();
+        }
+    }
+
+    addRandomPoint() {
+        const r = this.params.radius;
+        let x = random(-r, r);
+        let y = random(-r, r);
+
+        let isInside = (x * x + y * y) <= (r * r);
+
+        if (isInside) this.insideCount++;
+        this.totalCount++;
+
+        this.points.push({ x, y, isInside });
+    }
+
+    draw() {
+        push();
+        this.setupCanvas();
+
+        if (this.params.showGrid) this.drawStandardGrid(this.params.ppu);
+        this.drawStandardAxes();
+
+        this.drawGeometry();
+        this.drawPoints();
+
+        pop();
+
+        if (this.params.showLabels) this.drawFormulaLabel();
+    }
+
+    drawGeometry() {
+        const r_px = this.params.radius * this.params.ppu;
+
+        noFill();
+        stroke(100, 100);
+        strokeWeight(2);
+        rectMode(CENTER);
+        rect(0, 0, r_px * 2, r_px * 2);
+
+        stroke(this.palette.main);
+        circle(0, 0, r_px * 2);
+    }
+
+    drawPoints() {
+        const ppu = this.params.ppu;
+        noStroke();
+        
+        for (let p of this.points) {
+            fill(p.isInside ? this.palette.main : this.palette.accent);
+            circle(p.x * ppu, p.y * ppu, 5);
+        }
+    }
+
+    drawFormulaLabel() {
+        fill(30); 
+        noStroke(); 
+        textSize(16); 
+        textAlign(LEFT, TOP);
+
+        let piEstimate = (this.totalCount > 0) 
+            ? (4 * this.insideCount / this.totalCount) 
+            : 0;
+
+        text(`Total Points (N): ${this.totalCount}`, 20, 20);
+        text(`Points Inside (M): ${this.insideCount}`, 20, 45);
+        
+        textSize(20);
+        textStyle(BOLD);
+        text(`π Estimate: ${piEstimate.toFixed(5)}`, 20, 80);
+        
+        textStyle(NORMAL);
+        textSize(14);
+        fill(100);
+        let error = Math.abs(PI - piEstimate);
+        text(`Error: ${error.toFixed(5)}`, 20, 110);
+    }
+
+     keyPressed() {
+        if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true });
+    }
+}
+registerVisual(new MonteCarloPi());
+
+class RandomWalkVisual extends Visual {
+    constructor() {
+        super({
+            id: "random-walk",
+            name: "Random Walk Algorithm",
+            category: "Beginner",
+            description: "A path defined by random steps, with boundaries to keep the tracer on screen!"
+        });
+
+        this.history = []; 
+        this.defaultParams = {
+            ppu: 20,
+            stepSize: 0.5,     
+            stepType: "4-Directional", 
+            maxSteps: 500,     
+            animate: true,
+            animSpeed: 2,      
+            baseColor: "#4caf50",
+            showGrid: true,
+            showLabels: true
+        };
+
+        this.params = { ...this.defaultParams };
+
+        this.paramDefs = [
+            { type: "section", label: "Walk Logic" },
+            { type: "select", key: "stepType", label: "Step Type", options: ["4-Directional", "Continuous"] },
+            { type: "slider", key: "stepSize", label: "Step Length", min: 0.5, max: 1, step: 0.5 },
+            { type: "slider", key: "maxSteps", label: "Trail Length", min: 50, max: 2500, step: 50 },
+
+            { type: "section", label: "Animation [Space to Play/Pause]" },
+            { type: "toggle", key: "animate", label: "Walking" },
+            { type: "slider", key: "animSpeed", label: "Steps per Frame", min: 1, max: 10, step: 1 },
+
+            { type: "section", label: "Appearance" },
+            { type: "color", key: "baseColor", label: "Path Theme" },
+            { type: "toggle", key: "showGrid", label: "Show Grid" }
+        ];
+    }
+
+    init() {
+        this.updatePalette(this.params.baseColor);
+        this.resetWalk();
+    }
+
+    resetWalk() {
+        this.history = [{ x: 0, y: 0, col: this.palette.main }];
+    }
+
+    onParamChange(key, value) {
+        if (key === "baseColor") this.updatePalette(value);
+        if (key === "stepType" || key === "stepSize") this.resetWalk();
+
+        if (key === "maxSteps") {
+            this.pruneHistory();
+        }
+    }
+
+    pruneHistory() {
+        while (this.history.length > this.params.maxSteps) {
+            this.history.shift();
+        }
+    }
+
+    update() {
+        if (!this.params.animate) return;
+
+        for (let i = 0; i < this.params.animSpeed; i++) {
+            this.takeStep();
+        }
+
+        this.pruneHistory();
+    }
+
+    takeStep() {
+        const last = this.history[this.history.length - 1];
+        let nextX = last.x;
+        let nextY = last.y;
+        const s = this.params.stepSize;
+        const ppu = this.params.ppu;
+
+        if (this.params.stepType === "4-Directional") {
+            let r = floor(random(4));
+            if (r === 0) nextX += s;
+            else if (r === 1) nextX -= s;
+            else if (r === 2) nextY += s;
+            else if (r === 3) nextY -= s;
+        } 
+        else {
+            let angle = random(TWO_PI);
+            nextX += cos(angle) * s;
+            nextY += sin(angle) * s;
+        }
+
+        const limitX = (width / 2) / ppu - 1;
+        const limitY = (height / 2) / ppu - 1;
+        nextX = constrain(nextX, -limitX, limitX);
+        nextY = constrain(nextY, -limitY, limitY);
+
+        let segmentCol = random(this.palette.list);
+        this.history.push({ x: nextX, y: nextY, col: segmentCol });
+    }
+
+    draw() {
+        push();
+        this.setupCanvas();
+
+        if (this.params.showGrid) this.drawStandardGrid(this.params.ppu);
+        this.drawStandardAxes();
+
+        this.drawPath();
+        this.drawTracer();
+
+        pop();
+
+        if (this.params.showLabels) this.drawFormulaLabel();
+    }
+
+    drawPath() {
+        const ppu = this.params.ppu;
+        noFill();
+        strokeWeight(2);
+        for (let i = 0; i < this.history.length - 1; i++) {
+            let p1 = this.history[i];
+            let p2 = this.history[i + 1];
+            stroke(p2.col);
+            line(p1.x * ppu, p1.y * ppu, p2.x * ppu, p2.y * ppu);
+        }
+    }
+
+    drawTracer() {
+        const ppu = this.params.ppu;
+        const last = this.history[this.history.length - 1];
+        fill(this.palette.accent);
+        noStroke();
+        circle(last.x * ppu, last.y * ppu, 10);
+    }
+
+    drawFormulaLabel() {
+        fill(30); 
+        noStroke(); 
+        textSize(16); 
+        textAlign(LEFT, TOP);
+        text(`Current Trail Size: ${this.history.length} steps`, 20, 20);
+        text(`Max Allowed: ${this.params.maxSteps}`, 20, 45);
+    }
+
+
+    keyPressed() {
+        if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true });
+    }
+}
+registerVisual(new RandomWalkVisual());
+
+class CirclePacking extends Visual {
+    constructor() {
+        super({
+            id: "circle-packing",
+            name: "Circle Packing",
+            category: "Beginner",
+            description:"A algorithm that packs circles in a given boundary."
+        });
+
+        this.circles = [];
+        this.palette = [];
+        
+        this.defaultParams = {
+            maxCircles: 750,
+            growthSpeed: 1.5,
+            spawnRate: 10,
+            animate: true,
+            baseColor: "#e91e63"
+        }
+
+        this.params = {...this.defaultParams}
+
+        this.paramDefs= [
+            {type: "section", label: "Simulation [Space to Play/Pause]"},
+            {type: "toggle", key: "animate", label: "Run Simulation"},
+            {type: "slider", key: "maxCircles", label: "Max Circles", min: 100, max: 2000, step: 50},
+            {type: "slider", key: "growthSpeed", label: "Growth Speed", min: 0.2, max: 5, step: 0.1},
+            {type: "slider", key: "spawnRate", label: "Spawn Attempts", min: 1, max: 30, step: 1},
+
+            {type: "section", label: "Color Theme"},
+            {type: "color", key: "baseColor", label: "Theme Color"}
+        ];
+    }
+
+    init() {
+        this.circles = [];
+        this.updatePalette(this.params.baseColor); 
+    }
+
+    onParamChange(key, value) {
+        if (key === "baseColor" || key === "maxCircles") this.init();
+    }
+
+    update() {
+        if (!this.params.animate) return;
+        if (this.circles.length < this.params.maxCircles) {
+            for (let i = 0; i < this.params.spawnRate; i++) this.createNewCircle();
+        }
+        this.circles.forEach(c => {
+            if (c.growing) {
+                if (c.x + c.r > width/2 || c.x - c.r < -width/2 || c.y + c.r > height/2 || c.y - c.r < -height/2) {
+                    c.growing = false;
+                } else {
+                    for (let other of this.circles) {
+                        if (c !== other) {
+                            let d = dist(c.x, c.y, other.x, other.y);
+                            if (d < c.r + other.r + 2) { c.growing = false; break; }
+                        }
+                    }
+                }
+                if (c.growing) c.r += this.params.growthSpeed;
+            }
+        });
+    }
+
+    createNewCircle() {
+        let rx = random(-width/2, width/2);
+        let ry = random(-height/2, height/2);
+        let valid = true;
+        for (let c of this.circles) {
+            if (dist(rx, ry, c.x, c.y) < c.r + 2) { valid = false; break; }
+        }
+        if (valid) {
+            this.circles.push({
+                x: rx, y: ry, r: 1, growing: true,
+                color: random(this.palette.list) 
+            });
+        }
+    }
+
+    draw() {
+        push();
+        this.setupCanvas();
+        this.circles.forEach(c => {
+            fill(c.color);
+            stroke(20, 100);
+            strokeWeight(1.5);
+            circle(c.x, c.y, c.r * 2);
+        });
+        pop();
+    }
+
+    keyPressed() {
+        if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true });
+    }
+}
+registerVisual(new CirclePacking());
