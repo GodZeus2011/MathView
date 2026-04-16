@@ -56,12 +56,6 @@ class SimpleLineCircleDemo extends Visual {
         }
     }
 
-    mouseWheel(event) {
-        const newSize = constrain(this.params.size - event.delta * 0.1, 20, 400);
-        this.setParam("size", newSize, { controls: true });
-        return false;
-    }
-
     keyPressed() {
         if (key === "c" || key === "C") this.setParam("shape", "Circle", { controls: true });
         if (key === "l" || key === "L") this.setParam("shape", "Line", { controls: true });
@@ -429,6 +423,8 @@ class TrigFunctionGraph extends Visual {
     }
 }
 registerVisual(new TrigFunctionGraph());
+
+//Advanced Graphs
 
 class ParametricCircle extends Visual {
     constructor() {
@@ -925,6 +921,8 @@ class RoseVisual extends Visual {
 }
 registerVisual(new RoseVisual());
 
+//Shapes
+
 class RegularPolygonVisual extends Visual {
     constructor() {
         super({
@@ -1185,6 +1183,8 @@ class StarPolygonVisual extends Visual {
 }
 registerVisual(new StarPolygonVisual());
 
+//Distributions
+
 class UniformRandomPoints extends Visual {
     constructor() {
         super({
@@ -1315,7 +1315,11 @@ class UniformRandomPoints extends Visual {
         text(`Points: ${p.pointCount}`, 20, 20);
         text(`Area: ${area.toFixed(1)} units²`, 20, 45);
         text(`Density: ${density.toFixed(3)} pts/unit²`, 20, 70);
-        text(`Note: Press 'R' to Reshuffle`, 20, 105);
+        text(`Note: Press 'SPACE' to Reshuffle`, 20, 105);
+    }
+
+    keyPressed() {
+        if (key === ' ') this.generatePoints();
     }
 }
 registerVisual(new UniformRandomPoints());
@@ -1585,6 +1589,8 @@ class MonteCarloPi extends Visual {
 }
 registerVisual(new MonteCarloPi());
 
+//Simulations
+
 class RandomWalkVisual extends Visual {
     constructor() {
         super({
@@ -1836,3 +1842,236 @@ class CirclePacking extends Visual {
     }
 }
 registerVisual(new CirclePacking());
+
+//Bezier
+
+class BezierPlayground extends Visual {
+    constructor() {
+        super({
+            id: "bezier-playground",
+            name: "Bezier Curves",
+            category: "Beginner",
+            description: "Interact with bezier curves up to 10th order. Watch how layers of linear interpolation (De Casteljau) build complex shapes."
+        });
+
+        this.points = [];
+        this.draggingPoint = null;
+        this.layerColors = []; 
+
+        this.defaultParams = {
+            ppu: 20,
+            order: 3, 
+            t: 0.5,
+            animate: false,
+            animSpeed: 0.001,
+            showConstruction: true,
+            showLabels: true,
+            curveColor: "#000000", 
+            baseThemeColor: "#ff0080" 
+        };
+
+        this.params = { ...this.defaultParams };
+
+        this.paramDefs = [
+            { type: "section", label: "Curve Complexity" },
+            { type: "slider", key: "order", label: "Curve Order (n)", min: 1, max: 10, step: 1 },
+
+            { type: "section", label: "Animation & Progress [Space]" },
+            { type: "slider", key: "t", label: "Progress (t)", min: 0, max: 1, step: 0.001 },
+            { type: "toggle", key: "animate", label: "Auto-Animate" },
+
+            { type: "section", label: "Appearance" },
+            { type: "toggle", key: "showConstruction", label: "Show Construction Layers" },
+            { type: "color", key: "baseThemeColor", label: "Construction Theme" },
+            { type: "color", key: "curveColor", label: "Final Curve Color" }
+        ];
+    }
+
+    init() {
+        this.syncPointsToOrder();
+        this.generateLayerColors();
+    }
+
+    generateLayerColors() {
+        this.layerColors = [];
+        let base = color(this.params.baseThemeColor);
+        push();
+        colorMode(HSB, 360, 100, 100);
+        let h = hue(base);
+        for (let i = 0; i < 11; i++) {
+            this.layerColors.push(color((h + i * 35) % 360, 80, 90));
+        }
+        pop();
+    }
+
+    syncPointsToOrder() {
+        const targetCount = this.params.order + 1;
+        while (this.points.length < targetCount) {
+            let ang = random(TWO_PI);
+            let dist = random(5, 15);
+            this.points.push({ x: cos(ang) * dist, y: sin(ang) * dist });
+        }
+        if (this.points.length > targetCount) {
+            this.points = this.points.slice(0, targetCount);
+        }
+    }
+
+    onParamChange(key, value) {
+        if (key === "order") this.syncPointsToOrder();
+        if (key === "baseThemeColor") this.generateLayerColors();
+    }
+
+    update() {
+        if (this.params.animate) {
+            let nextT = this.params.t + this.params.animSpeed;
+            if (nextT > 1) nextT = 0;
+            nextT = Math.round(nextT * 10000) / 10000;
+            this.setParam("t", nextT, { controls: true });
+        }
+    }
+
+    draw() {
+        push();
+        this.setupCanvas();
+        this.drawStandardGrid(this.params.ppu);
+        this.drawStandardAxes();
+
+        const p = this.params;
+        const ppu = p.ppu;
+
+        this.drawControlPolygon(ppu);
+
+        this.drawFullCurve(p, ppu);
+
+        if (p.showConstruction) {
+            this.drawDeCasteljauRecursive(this.points, p.t, ppu);
+        }
+
+        this.drawHandles(ppu);
+
+        pop();
+
+        if (p.showLabels) this.drawFormulaLabel();
+    }
+
+    drawDeCasteljauRecursive(pts, t, ppu, depth = 0) {
+        if (pts.length < 2) return;
+
+        let nextLayer = [];
+        let col = this.layerColors[depth] || color(200);
+        
+        stroke(col);
+        strokeWeight(map(depth, 0, 10, 2.5, 1)); 
+
+        for (let i = 0; i < pts.length - 1; i++) {
+            let x = lerp(pts[i].x, pts[i + 1].x, t);
+            let y = lerp(pts[i].y, pts[i + 1].y, t);
+            nextLayer.push({ x, y });
+
+            line(pts[i].x * ppu, pts[i].y * ppu, pts[i + 1].x * ppu, pts[i + 1].y * ppu);
+            
+            noStroke();
+            fill(col);
+            circle(x * ppu, y * ppu, map(depth, 0, 10, 8, 4));
+            stroke(col);
+        }
+
+        if (nextLayer.length === 1) {
+            fill(0);
+            noStroke();
+            circle(nextLayer[0].x * ppu, nextLayer[0].y * ppu, 12);
+            return;
+        }
+
+        this.drawDeCasteljauRecursive(nextLayer, t, ppu, depth + 1);
+    }
+
+    calculateBezierPoint(pts, t) {
+        let temp = [...pts];
+        while (temp.length > 1) {
+            let next = [];
+            for (let i = 0; i < temp.length - 1; i++) {
+                next.push({
+                    x: lerp(temp[i].x, temp[i + 1].x, t),
+                    y: lerp(temp[i].y, temp[i + 1].y, t)
+                });
+            }
+            temp = next;
+        }
+        return temp[0];
+    }
+
+    drawFullCurve(p, ppu) {
+        noFill();
+        stroke(p.curveColor);
+        strokeWeight(4);
+        beginShape();
+        for (let i = 0; i <= 100; i++) {
+            let pt = this.calculateBezierPoint(this.points, i / 100);
+            vertex(pt.x * ppu, pt.y * ppu);
+        }
+        endShape();
+    }
+
+    drawControlPolygon(ppu) {
+        stroke(180, 100); 
+        strokeWeight(1);
+        drawingContext.setLineDash([4, 4]);
+        noFill();
+        beginShape();
+        for (let pt of this.points) vertex(pt.x * ppu, pt.y * ppu);
+        endShape();
+        drawingContext.setLineDash([]);
+    }
+
+    drawHandles(ppu) {
+        for (let i = 0; i < this.points.length; i++) {
+            let pt = this.points[i];
+            fill(pt === this.draggingPoint ? "#ffffff" : "#333333");
+            stroke(0);
+            strokeWeight(2);
+            circle(pt.x * ppu, pt.y * ppu, 14);
+            
+            if (this.params.showLabels) {
+                push(); scale(1, -1);
+                fill(0); noStroke(); textAlign(CENTER); textSize(10);
+                text(`P${i}`, pt.x * ppu, -pt.y * ppu - 15);
+                pop();
+            }
+        }
+    }
+
+    drawFormulaLabel() {
+        fill(30); noStroke(); textSize(16); textAlign(LEFT, TOP);
+        text(`Degree ${this.params.order} Bezier Curve`, 20, 20);
+        text(`t = ${this.params.t.toFixed(3)}`, 20, 45);
+    }
+
+    mousePressed() {
+        const ppu = this.params.ppu;
+        let mx = (mouseX - width / 2) / ppu;
+        let my = -(mouseY - height / 2) / ppu;
+
+        for (let pt of this.points) {
+            if (dist(mx, my, pt.x, pt.y) < 1) {
+                this.draggingPoint = pt;
+                break;
+            }
+        }
+    }
+
+    mouseDragged() {
+        if (this.draggingPoint) {
+            const ppu = this.params.ppu;
+            this.draggingPoint.x = constrain((mouseX - width / 2) / ppu, -width/(2*ppu), width/(2*ppu));
+            this.draggingPoint.y = constrain(-(mouseY - height / 2) / ppu, -height/(2*ppu), height/(2*ppu));
+        }
+    }
+
+    mouseReleased() { this.draggingPoint = null; }
+
+    keyPressed() {
+        if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true });
+    }
+}
+registerVisual(new BezierPlayground());
