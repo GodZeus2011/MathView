@@ -12,6 +12,7 @@ class Visual {
         this.defaultParams = {};
         this.params = {};
         this.paramDefs = [];
+        this.palette = { list: [] };
     }
 
     init() {}
@@ -40,10 +41,10 @@ class Visual {
     resetParams() {
         this.params = { ...this.defaultParams };
         Object.keys(this.defaultParams).forEach(key => {
-        this.setParam(key, this.defaultParams[key]);
-    });
-
+            this.setParam(key, this.defaultParams[key]);
+        });
         updateUI({controls: true});
+        this.init();
     }
 
     triggerAction(action) {
@@ -52,9 +53,21 @@ class Visual {
         }
     }
 
+
+
     setupCanvas() {
         translate(width / 2, height / 2);
         scale(1, -1);
+    }
+
+    mouseWheel(event) {
+        if (this.params.ppu !== undefined) {
+            let sensitivity = 0.05;
+            let newPPU = this.params.ppu - event.delta * sensitivity;
+            newPPU = constrain(newPPU, 5, 100); 
+            this.setParam("ppu", newPPU, {controls: true});
+            return false; 
+        }
     }
 
     updatePalette(hex) {
@@ -81,7 +94,9 @@ class Visual {
         this.palette.list.push(color(nh, ns, nb));
     }
     pop();
-}
+    }
+
+
 
     drawPolarGrid(ppu = 20, radialStep = 2, angleStep = 30, color = "#e0e0e0") {
         stroke(color);
@@ -103,8 +118,16 @@ class Visual {
     drawStandardGrid(ppu = 20, color = "#e0e0e0") {
         stroke(color);
         strokeWeight(0.5);
-        for (let x = -width/2; x <= width/2; x += ppu) line(x, -height/2, x, height/2);
-        for (let y = -height/2; y <= height/2; y += ppu) line(-width/2, y, width/2, y);
+        let limitX = width / 2;
+        let limitY = height / 2;
+        for (let x = 0; x <= limitX; x += ppu) {
+            line(x, -limitY, x, limitY);
+            line(-x, -limitY, -x, limitY);
+        }
+        for (let y = 0; y <= limitY; y += ppu) {
+            line(-limitX, y, limitX, y);
+            line(-limitX, -y, limitX, -y);
+        }
     }
 
     drawStandardAxes(color = "#333333") {
@@ -113,6 +136,64 @@ class Visual {
         line(-width/2, 0, width/2, 0);
         line(0, -height/2, 0, height/2);
     }
+
+    drawHUD(lines) {
+        push();
+        resetMatrix();
+        fill(255, 230);
+        noStroke();
+        rect(10, 10, 240, lines.length * 22 + 40, 8);
+        fill(30);
+        textAlign(LEFT, TOP);
+        textSize(14);
+        textStyle(BOLD);
+        text(this.name.toUpperCase(), 22, 22);
+        textStyle(NORMAL);
+        lines.forEach((line, i) => {
+            text(line, 22, 50 + i * 22);
+        });
+        pop();
+    }
+}
+
+class MathPoint {
+    constructor(uX, uY, label = "") {
+        this.x = uX; 
+        this.y = uY;
+        this.label = label;
+        this.isDragging = false;
+        this.size = 12;
+    }
+
+    update(ppu) {
+        if (this.isDragging) {
+            this.x = (mouseX - width / 2) / ppu;
+            this.y = -(mouseY - height / 2) / ppu;
+        }
+    }
+
+    draw(ppu, col) {
+        fill(this.isDragging ? 255 : col);
+        stroke(0);
+        strokeWeight(2);
+        circle(this.x * ppu, this.y * ppu, this.size);
+
+        if (this.label) {
+            push();
+            scale(1, -1);
+            fill(0); noStroke(); textAlign(CENTER); textSize(12);
+            text(this.label, this.x * ppu, -this.y * ppu - 15);
+            pop();
+        }
+    }
+
+    checkHit(mx, my, ppu) {
+        let d = dist(mx, my, this.x * ppu, this.y * ppu);
+        this.isDragging = d < this.size;
+        return this.isDragging;
+    }
+
+    stopDragging() { this.isDragging = false; }
 }
 
 //Register ids
@@ -411,6 +492,11 @@ function keyPressed() {
     if (key === 'r' || key === 'R') {
         currentVisual.resetParams();
         return; 
+    }
+
+    if (key === 's' || key === 'S') {
+        saveCanvas(currentVisual.id + "-snapshot", "png");
+        return;
     }
 
     currentVisual.keyPressed();

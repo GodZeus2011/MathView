@@ -4,12 +4,13 @@ class SimpleLineCircleDemo extends Visual {
             id: "simple-line-circle-demo",
             name: "Simple Line / Circle Demo",
             category: "Beginner",
-            description: "Switch between a centered circle and a centered line."
+            description: "Switch between a centered circle and a centered line. Use the Mouse Wheel to Zoom."
         });
 
         this.defaultParams = {
+            ppu: 20,           
             shape: "Circle",
-            size: 150,
+            size: 8,              
             strokeWeight: 3,
             strokeColor: "#3366ff",
             fillEnabled: true,
@@ -19,14 +20,12 @@ class SimpleLineCircleDemo extends Visual {
         this.params = { ...this.defaultParams };
 
         this.paramDefs = [
-            { type: "section", label: "Shape" },
+            { type: "section", label: "Shape Logic" },
             { type: "select", key: "shape", label: "Shape Type", options: ["Circle", "Line"] },
-
-            { type: "section", label: "Geometry" },
-            { type: "slider", key: "size", label: "Size (Pixels)", min: 20, max: 400, step: 1 },
-            { type: "slider", key: "strokeWeight", label: "Stroke Weight", min: 1, max: 20, step: 1 },
+            { type: "slider", key: "size", label: "Size (Units)", min: 1, max: 20, step: 0.1 },
 
             { type: "section", label: "Appearance" },
+            { type: "slider", key: "strokeWeight", label: "Thickness", min: 1, max: 20, step: 1 },
             { type: "color", key: "strokeColor", label: "Stroke Color" },
             { type: "toggle", key: "fillEnabled", label: "Fill Enabled" },
             { type: "color", key: "fillColor", label: "Fill Color" }
@@ -36,23 +35,33 @@ class SimpleLineCircleDemo extends Visual {
     draw() {
         push();
         this.setupCanvas(); 
+        
+        this.drawStandardGrid(this.params.ppu);
+        this.drawStandardAxes();
 
         this.drawMainShape();
-        
         pop();
+
+        this.drawHUD([
+            `Current Shape: ${this.params.shape}`,
+            `Size: ${this.params.size} Units`,
+            `Zoom: ${this.params.ppu.toFixed(1)} px/unit`
+        ]);
     }
 
     drawMainShape() {
         stroke(this.params.strokeColor);
         strokeWeight(this.params.strokeWeight);
+        
+        const s_px = this.params.size * this.params.ppu;
 
         if (this.params.shape === "Circle") {
             if (this.params.fillEnabled) fill(this.params.fillColor);
             else noFill();
-            circle(0, 0, this.params.size);
+            circle(0, 0, s_px * 2);
         } else {
             noFill();
-            line(-this.params.size / 2, 0, this.params.size / 2, 0);
+            line(-s_px, 0, s_px, 0);
         }
     }
 
@@ -62,6 +71,7 @@ class SimpleLineCircleDemo extends Visual {
     }
 }
 registerVisual(new SimpleLineCircleDemo());
+
 //GRAPHS
 
 class LinearFunctionGraph extends Visual {
