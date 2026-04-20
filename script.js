@@ -60,16 +60,6 @@ class Visual {
         scale(1, -1);
     }
 
-    mouseWheel(event) {
-        if (this.params.ppu !== undefined) {
-            let sensitivity = 0.05;
-            let newPPU = this.params.ppu - event.delta * sensitivity;
-            newPPU = constrain(newPPU, 5, 100); 
-            this.setParam("ppu", newPPU, {controls: true});
-            return false; 
-        }
-    }
-
     updatePalette(hex) {
     if (!hex) return;
     let base = color(hex);
@@ -103,7 +93,7 @@ class Visual {
         strokeWeight(0.5);
         noFill();
 
-        for (let r = radialStep; r < 25; r += radialStep) {
+        for (let r = radialStep; r < 100; r += radialStep) {
             circle(0, 0, r * 2 * ppu);
         }
 
@@ -463,6 +453,19 @@ function draw() {
 
     if(!currentVisual) return;
 
+    if (currentVisual.params.ppu !== undefined) {
+        let zoomSpeed = 1; 
+        
+        if (keyIsDown(UP_ARROW)) {
+            let newPPU = constrain(currentVisual.params.ppu + zoomSpeed, 5, 100);
+            currentVisual.setParam("ppu", newPPU, { controls: true });
+        }
+        if (keyIsDown(DOWN_ARROW)) {
+            let newPPU = constrain(currentVisual.params.ppu - zoomSpeed, 5, 100);
+            currentVisual.setParam("ppu", newPPU, { controls: true });
+        }
+    }
+
     currentVisual.update();
     currentVisual.draw();
 }
@@ -497,6 +500,10 @@ function keyPressed() {
     if (key === 's' || key === 'S') {
         saveCanvas(currentVisual.id + "-snapshot", "png");
         return;
+    }
+
+    if (keyCode === UP_ARROW || keyCode === DOWN_ARROW) {
+        return false; 
     }
 
     currentVisual.keyPressed();

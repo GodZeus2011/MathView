@@ -4,14 +4,14 @@ class SimpleLineCircleDemo extends Visual {
             id: "simple-line-circle-demo",
             name: "Simple Line / Circle Demo",
             category: "Beginner",
-            description: "Switch between a centered circle and a centered line. Use the Mouse Wheel to Zoom."
+            description: "Switch between a centered circle and a centered line. Scroll to Zoom."
         });
 
         this.defaultParams = {
             ppu: 20,           
             shape: "Circle",
             size: 8,              
-            strokeWeight: 3,
+            strokeWeight: 0.15, 
             strokeColor: "#3366ff",
             fillEnabled: true,
             fillColor: "#99bbff"
@@ -22,10 +22,10 @@ class SimpleLineCircleDemo extends Visual {
         this.paramDefs = [
             { type: "section", label: "Shape Logic" },
             { type: "select", key: "shape", label: "Shape Type", options: ["Circle", "Line"] },
-            { type: "slider", key: "size", label: "Size (Units)", min: 1, max: 20, step: 0.1 },
+            { type: "slider", key: "size", label: "Size (Units)", min: 1, max: 40, step: 1 },
 
             { type: "section", label: "Appearance" },
-            { type: "slider", key: "strokeWeight", label: "Thickness", min: 1, max: 20, step: 1 },
+            { type: "slider", key: "strokeWeight", label: "Thickness (Units)", min: 0.01, max: 0.5, step: 0.01 },
             { type: "color", key: "strokeColor", label: "Stroke Color" },
             { type: "toggle", key: "fillEnabled", label: "Fill Enabled" },
             { type: "color", key: "fillColor", label: "Fill Color" }
@@ -43,15 +43,17 @@ class SimpleLineCircleDemo extends Visual {
         pop();
 
         this.drawHUD([
-            `Current Shape: ${this.params.shape}`,
+            `Shape: ${this.params.shape}`,
             `Size: ${this.params.size} Units`,
+            `Thickness: ${this.params.strokeWeight} Units`,
             `Zoom: ${this.params.ppu.toFixed(1)} px/unit`
         ]);
     }
 
     drawMainShape() {
         stroke(this.params.strokeColor);
-        strokeWeight(this.params.strokeWeight);
+        
+        strokeWeight(this.params.strokeWeight * this.params.ppu);
         
         const s_px = this.params.size * this.params.ppu;
 
@@ -71,7 +73,6 @@ class SimpleLineCircleDemo extends Visual {
     }
 }
 registerVisual(new SimpleLineCircleDemo());
-
 //GRAPHS
 
 class LinearFunctionGraph extends Visual {
@@ -88,9 +89,8 @@ class LinearFunctionGraph extends Visual {
             m: 1.0, 
             b: 0.0, 
             lineColor: "#e91e63", 
-            lineWeight: 3,
+            lineWeight: 0.25,
             showGrid: true,
-            showAxes: true
         };
 
         this.params = { ...this.defaultParams };
@@ -98,10 +98,10 @@ class LinearFunctionGraph extends Visual {
         this.paramDefs = [
             { type: "section", label: "Function (y = mx + b)" },
             { type: "slider", key: "m", label: "Slope (m)", min: -10, max: 10, step: 0.1 },
-            { type: "slider", key: "b", label: "Y-Intercept (b)", min: -15, max: 15, step: 0.5 },
+            { type: "slider", key: "b", label: "Y-Intercept (b)", min: -30, max: 30, step: 1 },
             
             { type: "section", label: "Appearance" },
-            { type: "slider", key: "lineWeight", label: "Thickness", min: 1, max: 8, step: 1 },
+            { type: "slider", key: "lineWeight", label: "Thickness", min: 0.1, max: 0.5, step: 0.05 },
             { type: "color", key: "lineColor", label: "Line Color" },
             { type: "toggle", key: "showGrid", label: "Show Grid" },
         ];
@@ -117,7 +117,13 @@ class LinearFunctionGraph extends Visual {
         this.drawFunctionLine();
         
         pop();
-        this.drawFormulaLabel();
+
+        const sign = this.params.b >= 0 ? "+" : "-";
+        this.drawHUD([
+            `Equation: y = ${this.params.m.toFixed(1)}x ${sign} ${Math.abs(this.params.b).toFixed(1)}`,
+            `Thickness: ${this.params.lineWeight} Units`,
+            `Zoom: ${this.params.ppu.toFixed(0)} px/unit`   
+        ]);
     }
 
     drawFunctionLine() {
@@ -125,7 +131,7 @@ class LinearFunctionGraph extends Visual {
         
         noFill();
         stroke(lineColor);
-        strokeWeight(lineWeight);
+        strokeWeight(lineWeight * ppu);
 
         let x1 = (-width / 2) / ppu;
         let x2 = (width / 2) / ppu;
@@ -135,19 +141,6 @@ class LinearFunctionGraph extends Visual {
 
         line(x1 * ppu, y1 * ppu, x2 * ppu, y2 * ppu);
     }
-
-    drawFormulaLabel() {
-        fill(30);
-        noStroke();
-        textSize(18);
-        textAlign(LEFT, TOP);
-        
-        const mStr = this.params.m.toFixed(1);
-        const bVal = this.params.b;
-        const bStr = bVal >= 0 ? ` + ${bVal.toFixed(1)}` : ` - ${Math.abs(bVal).toFixed(1)}`;
-        
-        text(`y = ${mStr}x${bStr}`, 20, 20);
-    }
 }
 registerVisual(new LinearFunctionGraph());
 
@@ -155,19 +148,21 @@ class QuadraticFunctionGraph extends Visual {
     constructor() {
         super({
             id: "quadratic-function-graph",
-            name: "Quadratic Function Graph",
+            name: "Quadratic Graph",
             category: "Beginner",
-            description: "Explore Standard, Vertex, and Factored forms of quadratics."
+            description: "Explore Standard, Vertex, and Factored forms. Line thickness scales with zoom. Scroll to Zoom."
         });
 
         this.defaultParams = {
-            form: "Standard",
             ppu: 20, 
+            form: "Standard",
             a: 1.0, b: 0.0, c: 0.0,
             h: 0.0, k: 0.0,
             r1: -2.0, r2: 2.0,
-            lineColor: "#4caf50", lineWeight: 3,
-            showAxes: true, showGrid: true
+            lineColor: "#4caf50", 
+            lineWeight: 0.15,
+            showAxes: true, 
+            showGrid: true
         };
 
         this.params = { ...this.defaultParams };
@@ -201,7 +196,7 @@ class QuadraticFunctionGraph extends Visual {
 
         defs.push(
             { type: "section", label: "Appearance" },
-            { type: "slider", key: "lineWeight", label: "Thickness", min: 1, max: 10, step: 1 },
+            { type: "slider", key: "lineWeight", label: "Thickness (Units)", min: 0.01, max: 0.5, step: 0.01 },
             { type: "color", key: "lineColor", label: "Line Color" },
             { type: "toggle", key: "showGrid", label: "Show Grid" }
         );
@@ -225,7 +220,7 @@ class QuadraticFunctionGraph extends Visual {
         this.drawParabola();
         pop();
 
-        this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
     drawParabola() {
@@ -234,10 +229,11 @@ class QuadraticFunctionGraph extends Visual {
         
         noFill();
         stroke(p.lineColor);
-        strokeWeight(p.lineWeight);
+        strokeWeight(p.lineWeight * ppu);
 
         beginShape();
-        for (let sx = -width / 2; sx <= width / 2; sx += 1) {
+        let step = 1; 
+        for (let sx = -width / 2; sx <= width / 2; sx += step) {
             let x = sx / ppu; 
             let y = 0;
 
@@ -268,13 +264,8 @@ class QuadraticFunctionGraph extends Visual {
         return val.endsWith('.00') ? val.slice(0, -3) : val;
     }
 
-    drawFormulaLabel() {
+    drawFormulaHUD() {
         const p = this.params;
-        fill(30);
-        noStroke();
-        textSize(18);
-        textAlign(LEFT, TOP);
-
         let eq = "y = ";
         const a = this.fmt(p.a);
 
@@ -300,7 +291,11 @@ class QuadraticFunctionGraph extends Visual {
             eq += `${a}(x${r1Str})(x${r2Str})`;
         }
 
-        text(eq, 20, 20);
+        this.drawHUD([
+            `Form: ${p.form}`,
+            `Eq: ${eq}`,
+            `Zoom: ${p.ppu.toFixed(0)} px/unit`
+        ]);
     }
 }
 registerVisual(new QuadraticFunctionGraph());
@@ -355,12 +350,12 @@ class TrigFunctionGraph extends Visual {
         this.setupCanvas(); 
 
         if (this.params.showGrid) this.drawStandardGrid(this.params.ppu);
-        if (this.params.showAxes) this.drawStandardAxes();
+        this.drawStandardAxes();
 
         this.drawTrigWave();
         pop();
 
-        this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
     drawTrigWave() {
@@ -370,7 +365,7 @@ class TrigFunctionGraph extends Visual {
 
         noFill();
         stroke(p.lineColor);
-        strokeWeight(p.lineWeight || 3);
+        strokeWeight(p.lineWeight);
 
         let prevSY = null;
 
@@ -412,13 +407,8 @@ class TrigFunctionGraph extends Visual {
         return val.endsWith('.00') ? val.slice(0, -3) : val;
     }
 
-    drawFormulaLabel() {
+    drawFormulaHUD() {
         const p = this.params;
-        fill(30);
-        noStroke();
-        textSize(18);
-        textAlign(LEFT, TOP);
-
         const fName = p.funcType.toLowerCase();
         const a = this.fmt(p.amplitude);
         const b = this.fmt(p.frequency);
@@ -429,7 +419,12 @@ class TrigFunctionGraph extends Visual {
         const dStr = d >= 0 ? ` + ${this.fmt(d)}` : ` - ${this.fmt(Math.abs(d))}`;
 
         let eq = `y = ${a} ${fName}(${b}(x${cStr}))${dStr}`;
-        text(eq, 20, 20);
+        
+        this.drawHUD([
+            `Function: ${p.funcType}`,
+            `Eq: ${eq}`,
+            `Zoom: ${p.ppu.toFixed(0)} px/unit`
+        ]);
     }
 }
 registerVisual(new TrigFunctionGraph());
@@ -454,7 +449,6 @@ class ParametricCircle extends Visual {
             animate: false,
             animSpeed: 2,
             showComponents: true,
-            showLabels: true,
             circleColor: "#9c27b0",
             pointColor: "#ff5722",
             showGrid: true
@@ -464,13 +458,13 @@ class ParametricCircle extends Visual {
 
         this.paramDefs = [
             { type: "section", label: "Geometry (Units)" },
-            { type: "slider", key: "r", label: "Radius (r)", min: 0.5, max: 15, step: 0.1 },
+            { type: "slider", key: "r", label: "Radius (r)", min: 0.5, max: 30, step: 0.1 },
             { type: "slider", key: "h", label: "Center X (h)", min: -15, max: 15, step: 0.1 },
             { type: "slider", key: "k", label: "Center Y (k)", min: -15, max: 15, step: 0.1 },
 
             { type: "section", label: "Parameter (t) [Space to Animate]" },
             { type: "slider", key: "t", label: "Angle θ (0-360°)", min: 0, max: 360, step: 1 },
-            { type: "slider", key: "animSpeed", label: "Rotation Speed", min: 0.5, max: 5, step: 0.5 },
+            { type: "slider", key: "animSpeed", label: "Rotation Speed", min: 0.5, max: 3, step: 0.5 },
 
             { type: "section", label: "Visuals" },
             { type: "toggle", key: "showComponents", label: "Show X/Y Components" },
@@ -513,9 +507,7 @@ class ParametricCircle extends Visual {
 
         pop();
 
-        if (this.params.showLabels) {
-            this.drawFormulaLabel(px, py);
-        }
+        this.drawFormulaHUD(px, py);
     }
 
     drawCircle(h, k, r) {
@@ -547,20 +539,15 @@ class ParametricCircle extends Visual {
         circle(px, py, 10);
     }
 
-    drawFormulaLabel(px, py) {
+    drawFormulaHUD(px, py) {
         const ux = px / this.params.ppu;
         const uy = py / this.params.ppu; 
 
-        fill(30);
-        noStroke();
-        textSize(16);
-        textAlign(LEFT, TOP);
-
-        let eqX = `x = ${this.params.h} + ${this.params.r} cos(${this.params.t}°) ≈ ${ux.toFixed(2)}`;
-        let eqY = `y = ${this.params.k} + ${this.params.r} sin(${this.params.t}°) ≈ ${uy.toFixed(2)}`;
-
-        text(eqX, 20, 20);
-        text(eqY, 20, 45);
+        this.drawHUD([
+            `x = ${this.params.h} + ${this.params.r} cos(${this.params.t.toFixed(0)}°) ≈ ${ux.toFixed(2)}`,
+            `y = ${this.params.k} + ${this.params.r} sin(${this.params.t.toFixed(0)}°) ≈ ${uy.toFixed(2)}`,
+            `Zoom: ${this.params.ppu.toFixed(0)} px/unit`
+        ]);
     }
 
     keyPressed() {
@@ -577,7 +564,7 @@ class EllipseVisual extends Visual {
             id: "ellipse-circle",
             name: "Ellipse Visual",
             category: "Beginner",
-            description: "Geometry of an ellipse: semi-axes, foci, and the constant sum property (d1 + d2 = 2a)."
+            description: "Geometry of an ellipse: semi-axes, foci, and the constant sum property. Scroll to Zoom."
         });
 
         this.defaultParams = {
@@ -589,7 +576,6 @@ class EllipseVisual extends Visual {
             animSpeed: 2, 
             showFoci: true,
             showLinesToFoci: true,
-            showLabels: true,
             ellipseColor: "#3f51b5",
             fociColor: "#f44336",
             pointColor: "#ff9800",
@@ -602,8 +588,8 @@ class EllipseVisual extends Visual {
             { type: "section", label: "Geometry (Units)" },
             { type: "slider", key: "h", label: "Center X (h)", min: -10, max: 10, step: 0.1 },
             { type: "slider", key: "k", label: "Center Y (k)", min: -10, max: 10, step: 0.1 },
-            { type: "slider", key: "a", label: "Semi-Axis a (X)", min: 1, max: 18, step: 0.1 },
-            { type: "slider", key: "b", label: "Semi-Axis b (Y)", min: 1, max: 13, step: 0.1 },
+            { type: "slider", key: "a", label: "Semi-Axis a (X)", min: 1, max: 36, step: 0.1 },
+            { type: "slider", key: "b", label: "Semi-Axis b (Y)", min: 1, max: 30, step: 0.1 },
             
             { type: "section", label: "Point P & Animation [Space to Animate]" },
             { type: "slider", key: "t", label: "Point Angle (t)", min: 0, max: 360, step: 1 },
@@ -651,7 +637,7 @@ class EllipseVisual extends Visual {
 
         pop();
 
-        if (p.showLabels) this.drawFormulaLabel(c);
+        this.drawFormulaHUD(c);
     }
 
     drawEllipseShape(h, k, a, b) {
@@ -705,18 +691,22 @@ class EllipseVisual extends Visual {
         circle(px, py, 12);
     }
 
-    drawFormulaLabel(cUnits) {
+    drawFormulaHUD(cUnits) {
         const p = this.params;
-        fill(30); noStroke(); textSize(15); textAlign(LEFT, TOP);
         let eq = `(x - ${p.h})² / ${sq(p.a).toFixed(1)} + (y - ${p.k})² / ${sq(p.b).toFixed(1)} = 1`;
+        let sumText = "String: N/A";
         
-        text("Standard Form:", 20, 20);
-        text(eq, 20, 40);
-
         if (p.showLinesToFoci) {
             let sum = (p.a >= p.b) ? 2 * p.a : 2 * p.b;
-            text(`Constant Sum (d1 + d2): ${sum.toFixed(2)}`, 20, 70);
+            sumText = `Constant Sum (d1 + d2): ${sum.toFixed(2)}`;
         }
+
+        this.drawHUD([
+            `Eq: ${eq}`,
+            `Eccentricity (c): ${cUnits.toFixed(2)}`,
+            sumText,
+            `Zoom: ${p.ppu.toFixed(0)} px/unit`
+        ]);
     }
 
     keyPressed() {
@@ -747,9 +737,7 @@ class LissajousVisual extends Visual {
             animate: false,
             animSpeed: 1,
             curveColor: "#673ab7",
-            pointColor: "#ff5722",
             showGrid: true,
-            showLabels: true
         };
 
         this.params = {...this.defaultParams};
@@ -760,8 +748,8 @@ class LissajousVisual extends Visual {
             { type: "slider", key: "b", label: "Y Frequency (b)", min: 1, max: 10, step: 0.5 },
 
             { type: "section", label: "Geometry & Phase" },
-            { type: "slider", key: "A", label: "X Amplitude (A)", min: 1, max: 15, step: 0.5 },
-            { type: "slider", key: "B", label: "Y Amplitude (B)", min: 1, max: 10, step: 0.5 },
+            { type: "slider", key: "A", label: "X Amplitude (A)", min: 1, max: 30, step: 0.5 },
+            { type: "slider", key: "B", label: "Y Amplitude (B)", min: 1, max: 20, step: 0.5 },
             { type: "slider", key: "delta", label: "Phase Shift (δ)", min: 0, max: 360, step: 1 },
 
             { type: "section", label: "Animation [Space to Animate]" },
@@ -796,7 +784,7 @@ class LissajousVisual extends Visual {
 
         pop();
 
-        if (p.showLabels) this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
     drawLissajousPath(p, ppu, radDelta) {
@@ -813,12 +801,13 @@ class LissajousVisual extends Visual {
         endShape();
     }
 
-    drawFormulaLabel() {
+    drawFormulaHUD() {
         const p = this.params;
-        fill(30); noStroke(); textSize(16); textAlign(LEFT, TOP);
-        
-        text(`x = ${p.A} sin(${p.a}t + ${p.delta.toFixed(1)}°)`, 20, 20);
-        text(`y = ${p.B} sin(${p.b}t)`, 20, 45);
+        this.drawHUD([
+            `x = ${p.A} sin(${p.a.toFixed(1)}t + ${p.delta.toFixed(0)}°)`,
+            `y = ${p.B} sin(${p.b.toFixed(1)}t)`,
+            `Zoom: ${p.ppu.toFixed(0)} px/unit`
+        ])
     }
 
     keyPressed() {
@@ -848,14 +837,13 @@ class RoseVisual extends Visual {
             animSpeed: 1,
             gridMode: "Polar",
             curveColor: "#e91e63",
-            showLabels: true
         };
 
         this.params = {...this.defaultParams};
 
         this.paramDefs = [
             { type: "section", label: "Geometry (Polar)" },
-            { type: "slider", key: "a", label: "Amplitude (Size)", min: 1, max: 15, step: 0.5 },
+            { type: "slider", key: "a", label: "Amplitude (Size)", min: 1, max: 30, step: 0.5 },
             { type: "slider", key: "k", label: "Petal Factor (k)", min: 1, max: 12, step: 1 },
             { type: "slider", key: "offset", label: "Offset (c)", min: 0, max: 3, step: 0.1 },
 
@@ -893,7 +881,7 @@ class RoseVisual extends Visual {
 
         pop();
 
-        if (p.showLabels) this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
     drawRosePath(p, ppu, rotationRad) {
@@ -913,14 +901,15 @@ class RoseVisual extends Visual {
         endShape(CLOSE);
     }
 
-    drawFormulaLabel() {
+    drawFormulaHUD() {
         const p = this.params;
-        fill(30); noStroke(); textSize(18); textAlign(LEFT, TOP);
-        
         let petalCount = (p.k % 1 === 0) ? (p.k % 2 === 0 ? p.k * 2 : p.k) : "Complex";
         
-        text(`Equation: r = ${p.a} cos(${p.k}θ) + ${p.offset}`, 20, 20);
-        text(`Petals: ${petalCount}`, 20, 45);
+        this.drawHUD([
+            `Eq: r = ${p.a} cos(${p.k}θ) + ${p.offset}`,
+            `Petals: ${petalCount}`,
+            `Zoom: ${p.ppu.toFixed(0)} px/unit`
+        ]);
     }
 
     keyPressed() {
@@ -953,16 +942,15 @@ class RegularPolygonVisual extends Visual {
             vertexColor: "#ff4081", 
             showVertices: true,
             showApothem: false,
-            showGrid: true,
-            showLabels: true
+            showGrid: true
         };
 
         this.params = { ...this.defaultParams };
 
         this.paramDefs = [
             { type: "section", label: "Geometry (Units)" },
-            { type: "slider", key: "sides", label: "Number of Sides (n)", min: 3, max: 20, step: 1 },
-            { type: "slider", key: "radius", label: "Radius (R)", min: 1, max: 15, step: 0.1 },
+            { type: "slider", key: "sides", label: "Number of Sides (n)", min: 3, max: 25, step: 1 },
+            { type: "slider", key: "radius", label: "Radius (R)", min: 1, max: 40, step: 0.1 },
             
             { type: "section", label: "Animation [Space to Rotate]" },
             { type: "slider", key: "rotation", label: "Rotation", min: 0, max: 360, step: 1 },
@@ -1002,16 +990,16 @@ class RegularPolygonVisual extends Visual {
             vertices.push({ x: cos(angle) * R_px, y: sin(angle) * R_px });
         }
 
-        this.drawPolygon(vertices);
+        this.drawPolygonShape(vertices);
 
         if (p.showApothem) this.drawApothem(vertices);
         if (p.showVertices) this.drawVertices(vertices);
         pop();
 
-        if (p.showLabels) this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
-    drawPolygon(vertices) {
+    drawPolygonShape(vertices) {
         let c = color(this.params.fillColor);
         let strokeCol = color(red(c)*0.7, green(c)*0.7, blue(c)*0.7);
 
@@ -1045,18 +1033,19 @@ class RegularPolygonVisual extends Visual {
         circle(midX, midY, 6);
     }
 
-    drawFormulaLabel() {
+    drawFormulaHUD() {
         const p = this.params;
-        fill(30); noStroke(); textSize(16); textAlign(LEFT, TOP);
-        
         let sum = (p.sides - 2) * 180;
         let eachAngle = sum / p.sides;
         let apo = p.radius * cos(PI / p.sides);
 
-        text(`Polygon: ${p.sides} sides`, 20, 20);
-        text(`Interior Sum: ${sum}°`, 20, 45);
-        text(`Interior Angle: ${eachAngle.toFixed(1)}°`, 20, 70);
-        text(`Apothem (a): ${apo.toFixed(2)} units`, 20, 95);
+        this.drawHUD([
+            `Sides: ${p.sides}`,
+            `Interior Sum: ${sum}°`,
+            `Each Angle: ${eachAngle.toFixed(1)}°`,
+            `Apothem: ${apo.toFixed(2)} Units`,
+            `Zoom: ${p.ppu.toFixed(0)} px/unit`
+        ]);
     }
 
     keyPressed() {
@@ -1087,8 +1076,7 @@ class StarPolygonVisual extends Visual {
             fillColor: "#ff9800",
             vertexColor: "#f44336",
             showVertices: true,
-            showGrid: true,
-            showLabels: true
+            showGrid: true
         }
 
         this.params = {...this.defaultParams};
@@ -1096,8 +1084,8 @@ class StarPolygonVisual extends Visual {
         this.paramDefs = [
             { type: "section", label: "Geometry (Units)" },
             { type: "slider", key: "points", label: "Number of Spikes (n)", min: 3, max: 30, step: 1 },
-            { type: "slider", key: "outerR", label: "Outer Radius (R)", min: 1, max: 15, step: 0.1 },
-            { type: "slider", key: "innerR", label: "Inner Radius (r)", min: 0.5, max: 15, step: 0.1 },
+            { type: "slider", key: "outerR", label: "Outer Radius (R)", min: 1, max: 40, step: 0.1 },
+            { type: "slider", key: "innerR", label: "Inner Radius (r)", min: 1, max: 40, step: 0.1 },
             
             { type: "section", label: "Animation [Space to Rotate]" },
             { type: "slider", key: "rotation", label: "Rotation", min: 0, max: 360, step: 1 },
@@ -1127,6 +1115,7 @@ class StarPolygonVisual extends Visual {
         this.drawStandardAxes();
 
         const p = this.params;
+        const ppu = p.ppu;
         const R_px = p.outerR * p.ppu;
         const r_px = p.innerR * p.ppu;
         const rotRad = radians(p.rotation);
@@ -1147,7 +1136,7 @@ class StarPolygonVisual extends Visual {
 
         pop();
 
-        if (p.showLabels) this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
     drawStarShape(vertices) {
@@ -1170,19 +1159,18 @@ class StarPolygonVisual extends Visual {
         }
     }
 
-    drawFormulaLabel() {
+    drawFormulaHUD() {
         const p = this.params;
-        fill(30); noStroke(); textSize(16); textAlign(LEFT, TOP);
-        
         let ratio = p.innerR / p.outerR;
-        
-        text(`Star: ${p.points} spikes`, 20, 20);
-        text(`Radii: R=${p.outerR}, r=${p.innerR}`, 20, 45);
-        text(`Radius Ratio (r/R): ${ratio.toFixed(2)}`, 20, 70);
-        
-        if (ratio.toFixed(2) == 0.38 && p.points == 5) {
-            text("Fact: This is nearly a 'Golden Star'!", 20, 105);
-        }
+
+        let lines = [
+            `Spikes: ${p.points}`,
+            `Radii: R=${p.outerR}, r=${p.innerR}`,
+            `Ratio (r/R): ${ratio.toFixed(2)}`,
+            `Zoom: ${p.ppu.toFixed(0)} px/unit`
+        ]
+
+        this.drawHUD(lines);
     }
 
     keyPressed() {
@@ -1210,11 +1198,10 @@ class UniformRandomPoints extends Visual {
             pointCount: 1000,
             boundaryType: "Square",
             areaSize: 10,  
-            pointSize: 8,
+            pointSize: 0.4,   
             baseColor: "#00bcd4",
             showGrid: true,
-            showBoundary: true,
-            showLabels: true
+            showBoundary: true
         }
 
         this.params = {...this.defaultParams};
@@ -1223,12 +1210,12 @@ class UniformRandomPoints extends Visual {
             { type: "section", label: "Distribution Logic" },
             { type: "slider", key: "pointCount", label: "Number of Points", min: 10, max: 2000, step: 10 },
             { type: "select", key: "boundaryType", label: "Boundary Shape", options: ["Square", "Circle"] },
-            { type: "slider", key: "areaSize", label: "Area Size (Units)", min: 2, max: 15, step: 1 },
+            { type: "slider", key: "areaSize", label: "Area Size (Units)", min: 2, max: 40, step: 1 },
 
             { type: "section", label: "Appearance" },
             { type: "color", key: "baseColor", label: "Point Theme" },
-            { type: "slider", key: "pointSize", label: "Point Diameter", min: 2, max: 15, step: 1 },
-            { type: "toggle", key: "showBoundary", label: "Show Boundary Line" },
+            { type: "slider", key: "pointSize", label: "Point Size (Units)", min: 0.05, max: 1.5, step: 0.05 },
+            { type: "toggle", key: "showBoundary", label: "Show Boundary" },
             { type: "toggle", key: "showGrid", label: "Show Grid" }
         ];
     }
@@ -1286,7 +1273,7 @@ class UniformRandomPoints extends Visual {
 
         pop();
 
-        if (this.params.showLabels) this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
     drawBoundary() {
@@ -1308,24 +1295,25 @@ class UniformRandomPoints extends Visual {
         noStroke();
         for (let pt of this.points) {
             fill(pt.color);
-            circle(pt.x * ppu, pt.y * ppu, this.params.pointSize);
+            circle(pt.x * ppu, pt.y * ppu, this.params.pointSize * ppu);
         }
     }
 
-    drawFormulaLabel() {
+    drawFormulaHUD() {
         const p = this.params;
-        fill(30); noStroke(); textSize(16); textAlign(LEFT, TOP);
-
         let area = (p.boundaryType === "Square") 
             ? Math.pow(p.areaSize * 2, 2) 
             : Math.PI * Math.pow(p.areaSize, 2);
 
         let density = p.pointCount / area;
 
-        text(`Points: ${p.pointCount}`, 20, 20);
-        text(`Area: ${area.toFixed(1)} units²`, 20, 45);
-        text(`Density: ${density.toFixed(3)} pts/unit²`, 20, 70);
-        text(`Note: Press 'SPACE' to Reshuffle`, 20, 105);
+        this.drawHUD([
+            `Boundary: ${p.boundaryType}`,
+            `Points: ${p.pointCount}`,
+            `Density: ${density.toFixed(2)} pts/u²`,
+            `Zoom: ${p.ppu.toFixed(0)} px/unit`,
+            `Press SPACE to Reshuffle`
+        ]);
     }
 
     keyPressed() {
@@ -1351,27 +1339,26 @@ class NormalDistributionVisual extends Visual {
             meanY: 0,         
             stdDevX: 4.0,    
             stdDevY: 4.0,    
-            pointSize: 6,
+            pointSize: 0.3,
             baseColor: "#ff5722",
             showGrid: true,
-            showLabels: true
         };
 
         this.params = { ...this.defaultParams };
 
         this.paramDefs = [
             { type: "section", label: "Distribution (Units)" },
-            { type: "slider", key: "pointCount", label: "Number of Points", min: 50, max: 2000, step: 50 },
-            { type: "slider", key: "stdDevX", label: "Spread X (σ)", min: 0.5, max: 10, step: 0.1 },
-            { type: "slider", key: "stdDevY", label: "Spread Y (σ)", min: 0.5, max: 10, step: 0.1 },
+            { type: "slider", key: "pointCount", label: "Number of Points", min: 50, max: 5000, step: 50 },
+            { type: "slider", key: "stdDevX", label: "Spread X (σ)", min: 0.5, max: 15, step: 0.1 },
+            { type: "slider", key: "stdDevY", label: "Spread Y (σ)", min: 0.5, max: 15, step: 0.1 },
 
             { type: "section", label: "Position (μ)" },
-            { type: "slider", key: "meanX", label: "Mean X (μ)", min: -10, max: 10, step: 0.5 },
-            { type: "slider", key: "meanY", label: "Mean Y (μ)", min: -10, max: 10, step: 0.5 },
+            { type: "slider", key: "meanX", label: "Mean X (μ)", min: -15, max: 15, step: 0.5 },
+            { type: "slider", key: "meanY", label: "Mean Y (μ)", min: -15, max: 15, step: 0.5 },
 
             { type: "section", label: "Appearance" },
             { type: "color", key: "baseColor", label: "Point Theme" },
-            { type: "slider", key: "pointSize", label: "Point Size", min: 2, max: 10, step: 1 },
+            { type: "slider", key: "pointSize", label: "Point Size (Units)", min: 0.05, max: 1.0, step: 0.05 },
             { type: "toggle", key: "showGrid", label: "Show Grid" }
         ];
     }
@@ -1419,7 +1406,7 @@ class NormalDistributionVisual extends Visual {
 
         pop();
 
-        if (this.params.showLabels) this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
     drawDistribution() {
@@ -1427,26 +1414,30 @@ class NormalDistributionVisual extends Visual {
         noStroke();
         for (let pt of this.points) {
             fill(pt.color);
-            circle(pt.x * ppu, pt.y * ppu, this.params.pointSize);
+            circle(pt.x * ppu, pt.y * ppu, this.params.pointSize * ppu);
         }
     }
 
     drawMeanMarker() {
         const ppu = this.params.ppu;
-        stroke(0, 100);
-        strokeWeight(1);
+        stroke(0,150);
+        strokeWeight(1.5);
         const mx = this.params.meanX * ppu;
         const my = this.params.meanY * ppu;
-        line(mx - 10, my, mx + 10, my);
-        line(mx, my - 10, mx, my + 10);
+        let s = ppu * 0.5;
+        line(mx - s, my, mx + s, my);
+        line(mx, my - s, mx, my + s);
     }
 
-    drawFormulaLabel() {
+    drawFormulaHUD() {
         const p = this.params;
-        fill(30); noStroke(); textSize(16); textAlign(LEFT, TOP);
-
-        text(`Mean (μ): (${p.meanX}, ${p.meanY})`, 20, 45);
-        text(`Std Dev (σ): X=${p.stdDevX}, Y=${p.stdDevY}`, 20, 70);
+        this.drawHUD([
+            `Type: Gaussian Cluster`,
+            `Mean (μ): (${p.meanX}, ${p.meanY})`,
+            `Std Dev (σ): X:${p.stdDevX}, Y:${p.stdDevY}`,
+            `Zoom: ${p.ppu.toFixed(0)} px/unit`,
+            `Press SPACE to Reshuffle`
+        ]);
     }
 }
 registerVisual(new NormalDistributionVisual());
@@ -1471,7 +1462,6 @@ class MonteCarloPi extends Visual {
             animate: false,
             baseColor: "#3f51b5",
             showGrid: true,
-            showLabels: true
         }
 
         this.params = { ...this.defaultParams };
@@ -1479,10 +1469,10 @@ class MonteCarloPi extends Visual {
         this.paramDefs = [
             { type: "section", label: "Simulation [Space to Play/Pause]" },
             { type: "toggle", key: "animate", label: "Run Simulation" },
-            { type: "slider", key: "batchSize", label: "Points per Frame", min: 1, max: 50, step: 1 },
+            { type: "slider", key: "batchSize", label: "Points per Frame", min: 1, max: 100, step: 1 },
             
             { type: "section", label: "Geometry (Units)" },
-            { type: "slider", key: "radius", label: "Circle Radius (r)", min: 5, max: 10, step: 0.5 },
+            { type: "slider", key: "radius", label: "Circle Radius (r)", min: 5, max: 30, step: 0.5 },
 
             { type: "section", label: "Appearance" },
             { type: "color", key: "baseColor", label: "Theme Color" },
@@ -1543,19 +1533,20 @@ class MonteCarloPi extends Visual {
 
         pop();
 
-        if (this.params.showLabels) this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
     drawGeometry() {
         const r_px = this.params.radius * this.params.ppu;
 
         noFill();
-        stroke(100, 100);
+        stroke(100, 150);
         strokeWeight(2);
         rectMode(CENTER);
         rect(0, 0, r_px * 2, r_px * 2);
 
         stroke(this.palette.main);
+        strokeWeight(2);
         circle(0, 0, r_px * 2);
     }
 
@@ -1569,28 +1560,20 @@ class MonteCarloPi extends Visual {
         }
     }
 
-    drawFormulaLabel() {
-        fill(30); 
-        noStroke(); 
-        textSize(16); 
-        textAlign(LEFT, TOP);
-
-        let piEstimate = (this.totalCount > 0) 
+    drawFormulaHUD() {
+        let piEstimate = (this.totalCount > 0)
             ? (4 * this.insideCount / this.totalCount) 
             : 0;
-
-        text(`Total Points (N): ${this.totalCount}`, 20, 20);
-        text(`Points Inside (M): ${this.insideCount}`, 20, 45);
         
-        textSize(20);
-        textStyle(BOLD);
-        text(`π Estimate: ${piEstimate.toFixed(5)}`, 20, 80);
-        
-        textStyle(NORMAL);
-        textSize(14);
-        fill(100);
         let error = Math.abs(PI - piEstimate);
-        text(`Error: ${error.toFixed(5)}`, 20, 110);
+
+        this.drawHUD([
+            `Total (N): ${this.totalCount}`,
+            `Inside (M): ${this.insideCount}`,
+            `π ≈ 4×(M/N) = ${piEstimate.toFixed(5)}`,
+            `Error: ${error.toFixed(5)}`,
+            `Zoom: ${this.params.ppu.toFixed(0)} px/unit`
+        ]);
     }
 
      keyPressed() {
@@ -1607,20 +1590,19 @@ class RandomWalkVisual extends Visual {
             id: "random-walk",
             name: "Random Walk Algorithm",
             category: "Beginner",
-            description: "A path defined by random steps, with boundaries to keep the tracer on screen!"
+            description: "A path defined by random steps. Perfectly aligned to the grid. Scroll to Zoom."
         });
 
         this.history = []; 
         this.defaultParams = {
             ppu: 20,
-            stepSize: 0.5,     
+            stepSize: 1.0,     
             stepType: "4-Directional", 
             maxSteps: 500,     
             animate: true,
             animSpeed: 2,      
             baseColor: "#4caf50",
-            showGrid: true,
-            showLabels: true
+            showGrid: true
         };
 
         this.params = { ...this.defaultParams };
@@ -1628,12 +1610,12 @@ class RandomWalkVisual extends Visual {
         this.paramDefs = [
             { type: "section", label: "Walk Logic" },
             { type: "select", key: "stepType", label: "Step Type", options: ["4-Directional", "Continuous"] },
-            { type: "slider", key: "stepSize", label: "Step Length", min: 0.5, max: 1, step: 0.5 },
-            { type: "slider", key: "maxSteps", label: "Trail Length", min: 50, max: 2500, step: 50 },
+            { type: "slider", key: "stepSize", label: "Step Length", min: 0.5, max: 2, step: 0.5 },
+            { type: "slider", key: "maxSteps", label: "Trail Length", min: 50, max: 5000, step: 50 },
 
             { type: "section", label: "Animation [Space to Play/Pause]" },
             { type: "toggle", key: "animate", label: "Walking" },
-            { type: "slider", key: "animSpeed", label: "Steps per Frame", min: 1, max: 10, step: 1 },
+            { type: "slider", key: "animSpeed", label: "Steps per Frame", min: 1, max: 20, step: 1 },
 
             { type: "section", label: "Appearance" },
             { type: "color", key: "baseColor", label: "Path Theme" },
@@ -1653,10 +1635,7 @@ class RandomWalkVisual extends Visual {
     onParamChange(key, value) {
         if (key === "baseColor") this.updatePalette(value);
         if (key === "stepType" || key === "stepSize") this.resetWalk();
-
-        if (key === "maxSteps") {
-            this.pruneHistory();
-        }
+        if (key === "maxSteps") this.pruneHistory();
     }
 
     pruneHistory() {
@@ -1667,11 +1646,9 @@ class RandomWalkVisual extends Visual {
 
     update() {
         if (!this.params.animate) return;
-
         for (let i = 0; i < this.params.animSpeed; i++) {
             this.takeStep();
         }
-
         this.pruneHistory();
     }
 
@@ -1695,10 +1672,12 @@ class RandomWalkVisual extends Visual {
             nextY += sin(angle) * s;
         }
 
-        const limitX = (width / 2) / ppu - 1;
-        const limitY = (height / 2) / ppu - 1;
-        nextX = constrain(nextX, -limitX, limitX);
-        nextY = constrain(nextY, -limitY, limitY);
+        const limitX = (width / 2) / ppu;
+        const limitY = (height / 2) / ppu;
+
+        if (nextX > limitX || nextX < -limitX || nextY > limitY || nextY < -limitY) {
+            return;
+        }
 
         let segmentCol = random(this.palette.list);
         this.history.push({ x: nextX, y: nextY, col: segmentCol });
@@ -1711,18 +1690,18 @@ class RandomWalkVisual extends Visual {
         if (this.params.showGrid) this.drawStandardGrid(this.params.ppu);
         this.drawStandardAxes();
 
-        this.drawPath();
-        this.drawTracer();
+        this.drawWalkPath();
+        this.drawWalkerHead();
 
         pop();
-
-        if (this.params.showLabels) this.drawFormulaLabel();
+        this.drawFormulaHUD();
     }
 
-    drawPath() {
+    drawWalkPath() {
         const ppu = this.params.ppu;
         noFill();
         strokeWeight(2);
+        
         for (let i = 0; i < this.history.length - 1; i++) {
             let p1 = this.history[i];
             let p2 = this.history[i + 1];
@@ -1731,26 +1710,28 @@ class RandomWalkVisual extends Visual {
         }
     }
 
-    drawTracer() {
+    drawWalkerHead() {
         const ppu = this.params.ppu;
         const last = this.history[this.history.length - 1];
         fill(this.palette.accent);
         noStroke();
-        circle(last.x * ppu, last.y * ppu, 10);
+        circle(last.x * ppu, last.y * ppu, ppu * 0.4);
     }
 
-    drawFormulaLabel() {
-        fill(30); 
-        noStroke(); 
-        textSize(16); 
-        textAlign(LEFT, TOP);
-        text(`Current Trail Size: ${this.history.length} steps`, 20, 20);
-        text(`Max Allowed: ${this.params.maxSteps}`, 20, 45);
+    drawFormulaHUD() {
+        const last = this.history[this.history.length - 1];
+        this.drawHUD([
+            `Steps: ${this.history.length}`,
+            `Mode: ${this.params.stepType}`,
+            `X: ${last.x.toFixed(1)} | Y: ${last.y.toFixed(1)}`,
+            `Zoom: ${this.params.ppu.toFixed(0)} px/unit`
+        ]);
     }
-
 
     keyPressed() {
-        if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true });
+        if (key === ' ') {
+            this.setParam("animate", !this.params.animate, { controls: true });
+        }
     }
 }
 registerVisual(new RandomWalkVisual());
@@ -1761,31 +1742,31 @@ class CirclePacking extends Visual {
             id: "circle-packing",
             name: "Circle Packing",
             category: "Beginner",
-            description:"A algorithm that packs circles in a given boundary."
+            description: "A generative algorithm that grows circles until they touch. Scroll to Zoom."
         });
 
         this.circles = [];
-        this.palette = [];
         
         this.defaultParams = {
+            ppu: 20,
             maxCircles: 750,
-            growthSpeed: 1.5,
+            growthSpeed: 0.1, 
             spawnRate: 10,
             animate: true,
             baseColor: "#e91e63"
-        }
+        };
 
-        this.params = {...this.defaultParams}
+        this.params = {...this.defaultParams};
 
-        this.paramDefs= [
-            {type: "section", label: "Simulation [Space to Play/Pause]"},
-            {type: "toggle", key: "animate", label: "Run Simulation"},
-            {type: "slider", key: "maxCircles", label: "Max Circles", min: 100, max: 2000, step: 50},
-            {type: "slider", key: "growthSpeed", label: "Growth Speed", min: 0.2, max: 5, step: 0.1},
-            {type: "slider", key: "spawnRate", label: "Spawn Attempts", min: 1, max: 30, step: 1},
+        this.paramDefs = [
+            { type: "section", label: "Simulation [Space to Play/Pause]" },
+            { type: "toggle", key: "animate", label: "Run Simulation" },
+            { type: "slider", key: "maxCircles", label: "Max Circles", min: 100, max: 5000, step: 50 },
+            { type: "slider", key: "growthSpeed", label: "Growth Speed (Units)", min: 0.01, max: 0.5, step: 0.01 },
+            { type: "slider", key: "spawnRate", label: "Spawn Attempts", min: 1, max: 20, step: 1 },
 
-            {type: "section", label: "Color Theme"},
-            {type: "color", key: "baseColor", label: "Theme Color"}
+            { type: "section", label: "Color Theme" },
+            { type: "color", key: "baseColor", label: "Theme Color" }
         ];
     }
 
@@ -1800,18 +1781,29 @@ class CirclePacking extends Visual {
 
     update() {
         if (!this.params.animate) return;
+
+        const ppu = this.params.ppu;
+        const limitX = (width / 2) / ppu;
+        const limitY = (height / 2) / ppu;
+
         if (this.circles.length < this.params.maxCircles) {
-            for (let i = 0; i < this.params.spawnRate; i++) this.createNewCircle();
+            for (let i = 0; i < this.params.spawnRate; i++) {
+                this.createNewCircle(limitX, limitY);
+            }
         }
+
         this.circles.forEach(c => {
             if (c.growing) {
-                if (c.x + c.r > width/2 || c.x - c.r < -width/2 || c.y + c.r > height/2 || c.y - c.r < -height/2) {
+                if (Math.abs(c.x) + c.r > limitX || Math.abs(c.y) + c.r > limitY) {
                     c.growing = false;
                 } else {
                     for (let other of this.circles) {
                         if (c !== other) {
                             let d = dist(c.x, c.y, other.x, other.y);
-                            if (d < c.r + other.r + 2) { c.growing = false; break; }
+                            if (d < c.r + other.r + (2 / ppu)) { 
+                                c.growing = false; 
+                                break; 
+                            }
                         }
                     }
                 }
@@ -1820,16 +1812,21 @@ class CirclePacking extends Visual {
         });
     }
 
-    createNewCircle() {
-        let rx = random(-width/2, width/2);
-        let ry = random(-height/2, height/2);
+    createNewCircle(lx, ly) {
+        let rx = random(-lx, lx);
+        let ry = random(-ly, ly);
+        
         let valid = true;
         for (let c of this.circles) {
-            if (dist(rx, ry, c.x, c.y) < c.r + 2) { valid = false; break; }
+            if (dist(rx, ry, c.x, c.y) < c.r + (2 / this.params.ppu)) { 
+                valid = false; 
+                break; 
+            }
         }
+
         if (valid) {
             this.circles.push({
-                x: rx, y: ry, r: 1, growing: true,
+                x: rx, y: ry, r: 0.1, growing: true,
                 color: random(this.palette.list) 
             });
         }
@@ -1838,17 +1835,33 @@ class CirclePacking extends Visual {
     draw() {
         push();
         this.setupCanvas();
+        
+        const ppu = this.params.ppu;
+
         this.circles.forEach(c => {
             fill(c.color);
-            stroke(20, 100);
-            strokeWeight(1.5);
-            circle(c.x, c.y, c.r * 2);
+            stroke(20, 150);
+            strokeWeight(1); 
+            circle(c.x * ppu, c.y * ppu, c.r * 2 * ppu);
         });
+        
         pop();
+
+        this.drawFormulaHUD();
+    }
+
+    drawFormulaHUD() {
+        this.drawHUD([
+            `Circles: ${this.circles.length} / ${this.params.maxCircles}`,
+            `Growth: ${this.params.growthSpeed} u/f`,
+            `Zoom: ${this.params.ppu.toFixed(0)} px/unit`
+        ]);
     }
 
     keyPressed() {
-        if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true });
+        if (key === ' ') {
+            this.setParam("animate", !this.params.animate, { controls: true });
+        }
     }
 }
 registerVisual(new CirclePacking());
@@ -1861,11 +1874,10 @@ class StandardBezier extends Visual {
             id: "bezier-standard",
             name: "Standard Bezier",
             category: "Beginner",
-            description: "Practical Bezier curves (Linear to Cubic). Drag points to reshape the path."
+            description: "Practical Bezier curves (Order 1-4). Drag points to reshape. Scroll to Zoom."
         });
 
-        this.points = [];
-        this.draggingPoint = null;
+        this.points = []; 
         this.layerColors = [];
 
         this.defaultParams = {
@@ -1875,7 +1887,6 @@ class StandardBezier extends Visual {
             animate: false,
             animSpeed: 0.01,
             showConstruction: true,
-            showLabels: true,
             curveColor: "#000000", 
             baseThemeColor: "#2196f3" 
         };
@@ -1885,9 +1896,11 @@ class StandardBezier extends Visual {
         this.paramDefs = [
             { type: "section", label: "Complexity" },
             { type: "slider", key: "order", label: "Order (n)", min: 1, max: 4, step: 1 },
+
             { type: "section", label: "Animation & Progress [Space]" },
             { type: "slider", key: "t", label: "Progress (t)", min: 0, max: 1, step: 0.001 },
             { type: "toggle", key: "animate", label: "Auto-Animate" },
+
             { type: "section", label: "Appearance" },
             { type: "toggle", key: "showConstruction", label: "Show De Casteljau" },
             { type: "color", key: "baseThemeColor", label: "Construction Color" },
@@ -1898,6 +1911,7 @@ class StandardBezier extends Visual {
     init() {
         this.syncPoints();
         this.generateLayerColors();
+        this.updatePalette(this.params.baseThemeColor);
     }
 
     generateLayerColors() {
@@ -1915,7 +1929,8 @@ class StandardBezier extends Visual {
     syncPoints() {
         const targetCount = this.params.order + 1;
         while (this.points.length < targetCount) {
-            this.points.push({ x: random(-12, 12), y: random(-8, 8) });
+            let i = this.points.length;
+            this.points.push(new MathPoint(random(-10, 10), random(-8, 8), `P${i}`));
         }
         this.points = this.points.slice(0, targetCount);
     }
@@ -1926,12 +1941,23 @@ class StandardBezier extends Visual {
     }
 
     update() {
+        const ppu = this.params.ppu;
+
         if (this.params.animate) {
             let nextT = this.params.t + this.params.animSpeed;
             if (nextT > 1) nextT = 0;
             nextT = Math.round(nextT * 10000) / 10000;
             this.setParam("t", nextT, { controls: true });
         }
+
+        const limitX = (width / 2) / ppu;
+        const limitY = (height / 2) / ppu;
+
+        this.points.forEach(p => {
+            p.update(ppu);
+            p.x = constrain(p.x, -limitX, limitX);
+            p.y = constrain(p.y, -limitY, limitY);
+        });
     }
 
     draw() {
@@ -1955,14 +1981,22 @@ class StandardBezier extends Visual {
         }
         endShape();
 
-        if (this.params.showConstruction) this.drawRecursive(this.points, this.params.t, ppu);
+        if (this.params.showConstruction) {
+            this.drawRecursive(this.points, this.params.t, ppu);
+        }
 
-        this.drawHandles(ppu);
+        this.points.forEach(p => p.draw(ppu, this.palette.main));
         pop();
+
+        this.drawHUD([
+            `Order: ${this.params.order}`,
+            `t: ${this.params.t.toFixed(3)}`,
+            `Zoom: ${this.params.ppu.toFixed(0)} px/unit`
+        ]);
     }
 
     calculateBezier(pts, t) {
-        let temp = [...pts];
+        let temp = pts.map(p => ({x: p.x, y: p.y}));
         while (temp.length > 1) {
             let next = [];
             for (let i = 0; i < temp.length - 1; i++) {
@@ -1989,38 +2023,24 @@ class StandardBezier extends Visual {
         this.drawRecursive(next, t, ppu, depth + 1);
     }
 
-    drawHandles(ppu) {
-        for (let i = 0; i < this.points.length; i++) {
-            let pt = this.points[i];
-            fill(pt === this.draggingPoint ? 255 : 50); stroke(0); strokeWeight(2);
-            circle(pt.x * ppu, pt.y * ppu, 14);
-            push(); scale(1, -1); fill(0); noStroke(); textAlign(CENTER); textSize(12);
-            text(`P${i}`, pt.x * ppu, -pt.y * ppu - 18);
-            pop();
-        }
-    }
-
     mousePressed() {
         const ppu = this.params.ppu;
-        let mx = (mouseX - width/2)/ppu; let my = -(mouseY - height/2)/ppu;
-        for (let p of this.points) if (dist(mx, my, p.x, p.y) < 1) this.draggingPoint = p;
-    }
-
-    mouseDragged() {
-        if (this.draggingPoint) {
-            const ppu = this.params.ppu;
-            const margin = 1;
-
-            const limitX = (width / 2) / ppu - margin;
-            const limitY = (height / 2) / ppu - margin;
-
-            this.draggingPoint.x = constrain((mouseX - width / 2) / ppu, -limitX, limitX);
-            this.draggingPoint.y = constrain(-(mouseY - height / 2) / ppu, -limitY, limitY);
+        const mx = mouseX - width / 2;
+        const my = -(mouseY - height / 2);
+        for (let i = this.points.length - 1; i >= 0; i--) {
+            if (this.points[i].checkHit(mx, my, ppu)) {
+                break; 
+            }
         }
     }
 
-    mouseReleased() { this.draggingPoint = null; }
-    keyPressed() { if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true }); }
+    mouseReleased() {
+        this.points.forEach(p => p.stopDragging());
+    }
+
+    keyPressed() {
+        if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true });
+    }
 }
 registerVisual(new StandardBezier());
 
@@ -2034,7 +2054,6 @@ class HighOrderBezier extends Visual {
         });
 
         this.points = [];
-        this.draggingPoint = null;
         this.layerColors = [];
 
         this.defaultParams = {
@@ -2053,18 +2072,22 @@ class HighOrderBezier extends Visual {
         this.paramDefs = [
             { type: "section", label: "Complexity" },
             { type: "slider", key: "order", label: "Order (n)", min: 5, max: 16, step: 1 },
+
             { type: "section", label: "Animation & Progress [Space]" },
             { type: "slider", key: "t", label: "Progress (t)", min: 0, max: 1, step: 0.001 },
             { type: "toggle", key: "animate", label: "Auto-Animate" },
+
             { type: "section", label: "Appearance" },
             { type: "toggle", key: "showConstruction", label: "Show Construction" },
-            { type: "color", key: "themeColor", label: "Theme Spectrum Start" }
+            { type: "color", key: "themeColor", label: "Spectrum Start Color" },
+            { type: "color", key: "curveColor", label: "Final Curve Color" }
         ];
     }
 
     init() {
         this.syncPoints();
         this.generateLayerColors();
+        this.updatePalette(this.params.themeColor);
     }
 
     generateLayerColors() {
@@ -2074,20 +2097,20 @@ class HighOrderBezier extends Visual {
         colorMode(HSB, 360, 100, 100);
         let h = hue(base);
         for (let i = 0; i < 17; i++) {
-            this.layerColors.push(color((h + i * (360/16)) % 360, 80, 90));
+            this.layerColors.push(color((h + i * (360 / 16)) % 360, 80, 90));
         }
         pop();
     }
 
     syncPoints() {
-        const target = this.params.order + 1;
-        while (this.points.length < target) {
+        const targetCount = this.params.order + 1;
+        while (this.points.length < targetCount) {
             let i = this.points.length;
             let ang = i * 0.5;
             let d = 2 + i * 0.8;
-            this.points.push({ x: cos(ang) * d, y: sin(ang) * d });
+            this.points.push(new MathPoint(cos(ang) * d, sin(ang) * d, `P${i}`));
         }
-        this.points = this.points.slice(0, target);
+        this.points = this.points.slice(0, targetCount);
     }
 
     onParamChange(key, value) {
@@ -2096,12 +2119,23 @@ class HighOrderBezier extends Visual {
     }
 
     update() {
+        const ppu = this.params.ppu;
+
         if (this.params.animate) {
             let nextT = this.params.t + this.params.animSpeed;
             if (nextT > 1) nextT = 0;
             nextT = Math.round(nextT * 10000) / 10000;
             this.setParam("t", nextT, { controls: true });
         }
+
+        const limitX = (width / 2) / ppu;
+        const limitY = (height / 2) / ppu;
+
+        this.points.forEach(p => {
+            p.update(ppu);
+            p.x = constrain(p.x, -limitX, limitX);
+            p.y = constrain(p.y, -limitY, limitY);
+        });
     }
 
     draw() {
@@ -2122,14 +2156,23 @@ class HighOrderBezier extends Visual {
         }
         endShape();
 
-        if (this.params.showConstruction) this.drawRecursive(this.points, t, ppu);
+        if (this.params.showConstruction) {
+            this.drawRecursive(this.points, t, ppu);
+        }
 
-        this.drawHandles(ppu);
+        this.points.forEach(p => p.draw(ppu, "#444444"));
+
         pop();
+
+        this.drawHUD([
+            `Order: ${this.params.order}`,
+            `t: ${this.params.t.toFixed(3)}`,
+            `Zoom: ${this.params.ppu.toFixed(0)} px/unit`
+        ]);
     }
 
     calculateBezier(pts, t) {
-        let temp = [...pts];
+        let temp = pts.map(p => ({x: p.x, y: p.y}));
         while (temp.length > 1) {
             let next = [];
             for (let i = 0; i < temp.length - 1; i++) {
@@ -2144,50 +2187,43 @@ class HighOrderBezier extends Visual {
         if (pts.length < 2) return;
         let next = [];
         let col = this.layerColors[depth] || color(200);
-        stroke(col); strokeWeight(map(depth, 0, 16, 1.8, 0.4));
+        
+        stroke(col); 
+        strokeWeight(map(depth, 0, 16, 1.8, 0.4));
+
         for (let i = 0; i < pts.length - 1; i++) {
             let x = lerp(pts[i].x, pts[i+1].x, t);
             let y = lerp(pts[i].y, pts[i+1].y, t);
             next.push({x, y});
             line(pts[i].x * ppu, pts[i].y * ppu, pts[i+1].x * ppu, pts[i+1].y * ppu);
         }
-        if (next.length === 1) { fill(0); noStroke(); circle(next[0].x * ppu, next[0].y * ppu, 10); return; }
-        this.drawRecursive(next, t, ppu, depth + 1);
-    }
 
-    drawHandles(ppu) {
-        for (let i = 0; i < this.points.length; i++) {
-            let pt = this.points[i];
-            fill(pt === this.draggingPoint ? "#ffffff" : "#444444");
-            stroke(0); strokeWeight(1);
-            circle(pt.x * ppu, pt.y * ppu, 10);
-            
-            push(); scale(1, -1);
-            fill(0); noStroke(); textAlign(CENTER); textSize(9);
-            text(`P${i}`, pt.x * ppu, -pt.y * ppu - 12);
-            pop();
+        if (next.length === 1) { 
+            fill(0); noStroke(); 
+            circle(next[0].x * ppu, next[0].y * ppu, 10); 
+            return; 
         }
+
+        this.drawRecursive(next, t, ppu, depth + 1);
     }
 
     mousePressed() {
         const ppu = this.params.ppu;
-        let mx = (mouseX - width/2)/ppu; let my = -(mouseY - height/2)/ppu;
-        for (let p of this.points) if (dist(mx, my, p.x, p.y) < 0.8) this.draggingPoint = p;
-    }
-
-    mouseDragged() {
-        if (this.draggingPoint) {
-            const ppu = this.params.ppu;
-            const margin = 0.5;
-            
-            const limitX = (width / 2) / ppu - margin;
-            const limitY = (height / 2) / ppu - margin;
-
-            this.draggingPoint.x = constrain((mouseX - width / 2) / ppu, -limitX, limitX);
-            this.draggingPoint.y = constrain(-(mouseY - height / 2) / ppu, -limitY, limitY);
+        const mx = mouseX - width / 2;
+        const my = -(mouseY - height / 2);
+        for (let i = this.points.length - 1; i >= 0; i--) {
+            if (this.points[i].checkHit(mx, my, ppu)) {
+                break; 
+            }
         }
     }
-    mouseReleased() { this.draggingPoint = null; }
-    keyPressed() { if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true }); }
+
+    mouseReleased() {
+        this.points.forEach(p => p.stopDragging());
+    }
+
+    keyPressed() {
+        if (key === ' ') this.setParam("animate", !this.params.animate, { controls: true });
+    }
 }
 registerVisual(new HighOrderBezier());
